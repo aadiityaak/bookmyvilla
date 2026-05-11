@@ -98,13 +98,23 @@ const submit = () => {
             <div class="grid gap-6">
                 <div class="grid gap-2">
                     <Label for="name">Name</Label>
-                    <Input id="name" v-model="form.name" autocomplete="name" />
+                    <Input
+                        id="name"
+                        v-model="form.name"
+                        class="clay-control"
+                        autocomplete="name"
+                    />
                     <InputError :message="form.errors.name" />
                 </div>
 
                 <div class="grid gap-2">
                     <Label for="email">Email</Label>
-                    <Input id="email" v-model="form.email" autocomplete="email" />
+                    <Input
+                        id="email"
+                        v-model="form.email"
+                        class="clay-control"
+                        autocomplete="email"
+                    />
                     <InputError :message="form.errors.email" />
                 </div>
 
@@ -113,7 +123,7 @@ const submit = () => {
                     <select
                         id="role"
                         v-model="form.role"
-                        class="h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
+                        class="clay-select"
                     >
                         <option v-for="role in roles" :key="role" :value="role">
                             {{ role }}

@@ -126,6 +126,7 @@ const statusPillClass = (disabledAt: string | null) => {
                     <Input
                         id="q"
                         v-model="form.q"
+                        class="clay-control"
                         placeholder="Name or email"
                         @keyup.enter="applyFilters"
                     />
@@ -136,7 +137,7 @@ const statusPillClass = (disabledAt: string | null) => {
                     <select
                         id="role"
                         v-model="form.role"
-                        class="h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
+                        class="clay-select"
                         @change="applyFilters"
                     >
                         <option value="">All</option>
@@ -151,7 +152,7 @@ const statusPillClass = (disabledAt: string | null) => {
                     <select
                         id="status"
                         v-model="form.status"
-                        class="h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
+                        class="clay-select"
                         @change="applyFilters"
                     >
                         <option value="">All</option>

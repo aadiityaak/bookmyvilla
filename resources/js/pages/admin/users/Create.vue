@@ -73,6 +73,7 @@ const cancel = () => {
                     <Input
                         id="name"
                         v-model="form.name"
+                        class="clay-control"
                         autocomplete="name"
                         placeholder="Full name"
                     />
@@ -84,6 +85,7 @@ const cancel = () => {
                     <Input
                         id="email"
                         v-model="form.email"
+                        class="clay-control"
                         autocomplete="email"
                         placeholder="email@example.com"
                     />
@@ -95,7 +97,7 @@ const cancel = () => {
                     <select
                         id="role"
                         v-model="form.role"
-                        class="h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
+                        class="clay-select"
                     >
                         <option
                             v-for="role in props.roles"
@@ -113,6 +115,7 @@ const cancel = () => {
                     <Input
                         id="password"
                         v-model="form.password"
+                        class="clay-control"
                         type="password"
                         autocomplete="new-password"
                     />
@@ -124,6 +127,7 @@ const cancel = () => {
                     <Input
                         id="password_confirmation"
                         v-model="form.password_confirmation"
+                        class="clay-control"
                         type="password"
                         autocomplete="new-password"
                     />
