@@ -50,76 +50,88 @@ const cancel = () => {
 <template>
     <Head title="Create user" />
 
-    <div class="flex flex-col gap-6 p-4">
-        <Heading
-            variant="small"
-            title="Create user"
-            description="Create a new user and assign a role"
-        />
+    <div class="mx-auto flex w-full max-w-3xl flex-col gap-8 px-6 py-8">
+        <div class="flex items-start justify-between gap-4">
+            <Heading
+                variant="default"
+                title="Create user"
+                description="Create a new user and assign a role"
+            />
 
-        <form class="space-y-6" @submit.prevent="submit">
-            <div class="grid gap-2">
-                <Label for="name">Name</Label>
-                <Input
-                    id="name"
-                    v-model="form.name"
-                    autocomplete="name"
-                    placeholder="Full name"
-                />
-                <InputError :message="form.errors.name" />
-            </div>
+            <Button variant="outline" type="button" @click="cancel">
+                Cancel
+            </Button>
+        </div>
 
-            <div class="grid gap-2">
-                <Label for="email">Email</Label>
-                <Input
-                    id="email"
-                    v-model="form.email"
-                    autocomplete="email"
-                    placeholder="email@example.com"
-                />
-                <InputError :message="form.errors.email" />
-            </div>
+        <form
+            class="rounded-3xl border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)] p-6"
+            @submit.prevent="submit"
+        >
+            <div class="grid gap-6">
+                <div class="grid gap-2">
+                    <Label for="name">Name</Label>
+                    <Input
+                        id="name"
+                        v-model="form.name"
+                        autocomplete="name"
+                        placeholder="Full name"
+                    />
+                    <InputError :message="form.errors.name" />
+                </div>
 
-            <div class="grid gap-2">
-                <Label for="role">Role</Label>
-                <select
-                    id="role"
-                    v-model="form.role"
-                    class="h-9 w-full rounded-md border bg-background px-3 text-sm"
-                >
-                    <option v-for="role in props.roles" :key="role" :value="role">
-                        {{ role }}
-                    </option>
-                </select>
-                <InputError :message="form.errors.role" />
-            </div>
+                <div class="grid gap-2">
+                    <Label for="email">Email</Label>
+                    <Input
+                        id="email"
+                        v-model="form.email"
+                        autocomplete="email"
+                        placeholder="email@example.com"
+                    />
+                    <InputError :message="form.errors.email" />
+                </div>
 
-            <div class="grid gap-2">
-                <Label for="password">Password</Label>
-                <Input
-                    id="password"
-                    v-model="form.password"
-                    type="password"
-                    autocomplete="new-password"
-                />
-                <InputError :message="form.errors.password" />
-            </div>
+                <div class="grid gap-2">
+                    <Label for="role">Role</Label>
+                    <select
+                        id="role"
+                        v-model="form.role"
+                        class="h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
+                    >
+                        <option
+                            v-for="role in props.roles"
+                            :key="role"
+                            :value="role"
+                        >
+                            {{ role }}
+                        </option>
+                    </select>
+                    <InputError :message="form.errors.role" />
+                </div>
 
-            <div class="grid gap-2">
-                <Label for="password_confirmation">Confirm password</Label>
-                <Input
-                    id="password_confirmation"
-                    v-model="form.password_confirmation"
-                    type="password"
-                    autocomplete="new-password"
-                />
-            </div>
+                <div class="grid gap-2">
+                    <Label for="password">Password</Label>
+                    <Input
+                        id="password"
+                        v-model="form.password"
+                        type="password"
+                        autocomplete="new-password"
+                    />
+                    <InputError :message="form.errors.password" />
+                </div>
 
-            <div class="flex items-center gap-2">
-                <Button :disabled="form.processing">Create</Button>
-                <Button variant="outline" type="button" @click="cancel">
-                    Cancel
-                </Button>
+                <div class="grid gap-2">
+                    <Label for="password_confirmation">Confirm password</Label>
+                    <Input
+                        id="password_confirmation"
+                        v-model="form.password_confirmation"
+                        type="password"
+                        autocomplete="new-password"
+                    />
+                </div>
+
+                <div class="flex items-center justify-end gap-2">
+                    <Button :disabled="form.processing">Create</Button>
+                </div>
             </div>
         </form>
     </div>
