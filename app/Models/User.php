@@ -38,6 +38,16 @@ class User extends Authenticatable
         return $this->role === 'admin';
     }
 
+    public function isHost(): bool
+    {
+        return $this->role === 'host';
+    }
+
+    public function isInvestor(): bool
+    {
+        return $this->role === 'investor';
+    }
+
     public function isDisabled(): bool
     {
         return $this->disabled_at !== null;

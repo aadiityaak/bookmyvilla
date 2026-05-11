@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, FolderGit2, LayoutGrid, Users } from 'lucide-vue-next';
+import { BookOpen, Building2, FolderGit2, LayoutGrid, Users } from 'lucide-vue-next';
 import { computed } from 'vue';
 import { usePage } from '@inertiajs/vue3';
 import AppLogo from '@/components/AppLogo.vue';
@@ -29,6 +29,15 @@ const mainNavItems = computed<NavItem[]>(() => {
             href: dashboard(),
             icon: LayoutGrid,
         },
+        ...(userRole.value === 'tenant'
+            ? []
+            : [
+                  {
+                      title: 'Property',
+                      href: '/properties',
+                      icon: Building2,
+                  },
+              ]),
     ];
 
     if (userRole.value === 'admin') {

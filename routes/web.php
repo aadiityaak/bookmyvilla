@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\PropertyController;
 
 Route::inertia('/', 'Welcome', [
     'canRegister' => Features::enabled(Features::registration()),
@@ -10,6 +11,18 @@ Route::inertia('/', 'Welcome', [
 
 Route::middleware(['auth'])->group(function () {
     Route::inertia('dashboard', 'Dashboard')->name('dashboard');
+});
+
+Route::middleware(['auth', 'role:host,admin,investor'])->group(function () {
+    Route::get('properties', [PropertyController::class, 'index'])->name('properties.index');
+});
+
+Route::middleware(['auth', 'role:host,admin'])->group(function () {
+    Route::get('properties/create', [PropertyController::class, 'create'])->name('properties.create');
+    Route::post('properties', [PropertyController::class, 'store'])->name('properties.store');
+    Route::get('properties/{property}/edit', [PropertyController::class, 'edit'])->name('properties.edit');
+    Route::patch('properties/{property}', [PropertyController::class, 'update'])->name('properties.update');
+    Route::delete('properties/{property}', [PropertyController::class, 'destroy'])->name('properties.destroy');
 });
 
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
