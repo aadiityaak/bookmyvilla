@@ -47,14 +47,14 @@ class UserController extends Controller
         return Inertia::render('admin/users/Index', [
             'filters' => $filters,
             'users' => $users,
-            'roles' => ['tenant', 'host', 'admin'],
+            'roles' => ['tenant', 'host', 'investor', 'admin'],
         ]);
     }
 
     public function create(): Response
     {
         return Inertia::render('admin/users/Create', [
-            'roles' => ['tenant', 'host', 'admin'],
+            'roles' => ['tenant', 'host', 'investor', 'admin'],
         ]);
     }
 
@@ -63,7 +63,7 @@ class UserController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique(User::class)],
-            'role' => ['required', 'string', Rule::in(['tenant', 'host', 'admin'])],
+            'role' => ['required', 'string', Rule::in(['tenant', 'host', 'investor', 'admin'])],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
@@ -86,7 +86,7 @@ class UserController extends Controller
                 'disabled_at' => optional($user->disabled_at)?->toISOString(),
                 'created_at' => optional($user->created_at)?->toISOString(),
             ],
-            'roles' => ['tenant', 'host', 'admin'],
+            'roles' => ['tenant', 'host', 'investor', 'admin'],
         ]);
     }
 
@@ -95,7 +95,7 @@ class UserController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique(User::class)->ignore($user->id)],
-            'role' => ['required', 'string', Rule::in(['tenant', 'host', 'admin'])],
+            'role' => ['required', 'string', Rule::in(['tenant', 'host', 'investor', 'admin'])],
             'disabled' => ['required', 'boolean'],
         ]);
 
@@ -123,4 +123,3 @@ class UserController extends Controller
         return to_route('admin.users.edit', $user);
     }
 }
-

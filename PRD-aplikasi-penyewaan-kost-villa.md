@@ -63,6 +63,7 @@ Target awal: meluncurkan produk yang cukup “usable” untuk transaksi end-to-e
 
 - Properti (Kost/Villa)
 - Unit (kamar untuk kost; untuk villa bisa 1 unit = 1 properti)
+- Investor (opsional; informasi kepemilikan/pendanaan terkait properti)
 - Kalender ketersediaan
 - Booking/Reservation
 - Pembayaran (invoice, status, webhook)
@@ -94,6 +95,11 @@ Target awal: meluncurkan produk yang cukup “usable” untuk transaksi end-to-e
 - Verifikasi listing (opsional), menangani dispute/cancel/refund.
 - Monitoring transaksi & integritas data.
 
+### 5.5 Investor
+
+- Ingin nama/brand investor tampil pada listing (transparansi kepemilikan).
+- (Opsional fase lanjut) Ingin melihat ringkasan performa properti yang diinvestasikan (booking, pendapatan).
+
 ---
 
 ## 6) User Journey (Alur Utama)
@@ -120,7 +126,7 @@ Target awal: meluncurkan produk yang cukup “usable” untuk transaksi end-to-e
 ### 7.1 Modul 1 — Auth & Roles (fondasi)
 
 - Registrasi & login.
-- Role: `tenant` (penyewa), `host` (pemilik), `admin`.
+- Role: `tenant` (penyewa), `host` (pemilik), `investor`, `admin`.
 - Profil pengguna (nama, nomor HP, email).
 
 **Manajemen user (MVP):**
@@ -159,7 +165,7 @@ Target awal: meluncurkan produk yang cukup “usable” untuk transaksi end-to-e
 
 **Definisi data minimal:**
 
-- Properti: nama, tipe, alamat, lat/lng (opsional), deskripsi, fasilitas, aturan, jam check-in/out (villa), kontak.
+- Properti: nama, tipe, alamat, lat/lng (opsional), deskripsi, fasilitas, aturan, jam check-in/out (villa), kontak, investor (opsional: nama investor / relasi investor).
 - Unit (kost): nama/nomor kamar, harga, fasilitas unit, status aktif.
 
 ### 7.3 Modul 3 — Booking & Kalender (wajib)
@@ -254,7 +260,7 @@ Untuk MVP, rekomendasi: **Opsi A**.
 **FR-LS-02** Pengguna dapat memfilter berdasarkan tipe (kost/villa), harga, fasilitas, lokasi.  
 **FR-LS-03** Pengguna dapat membuka halaman detail listing + unit (jika kost).  
 **FR-LS-04** Host dapat membuat/mengubah/mengarsip listing.  
-**FR-LS-05** Host dapat mengunggah foto dan memilih cover.
+**FR-LS-06** Sistem dapat menampilkan informasi investor pada listing/detail properti (jika diisi).
 
 ### 9.2 Booking
 
@@ -310,13 +316,14 @@ Untuk MVP, rekomendasi: **Opsi A**.
 
 > Nama tabel/field final mengikuti konvensi tim, di bawah ini konsepnya.
 
+- `users` (role: tenant/host/investor/admin)
 - `users` (role: tenant/host/admin)
 - `users.is_active` (boolean) atau `users.disabled_at` (timestamp) untuk disable user
+- `investors` (nama/brand, kontak opsional) atau `properties.investor_name` (opsi sederhana MVP)
 - `users.email_verified_at` / `users.phone_verified_at` (opsional sesuai keputusan verifikasi)
 - `properties` (type: kost/villa, owner_id)
 - `units` (property_id, untuk kost)
 - `amenities` + pivot (property_amenities, unit_amenities opsional)
-- `availability_blocks` (scope: property/unit, start_date, end_date, reason)
 - `bookings` (user_id, property_id, unit_id nullable, start_date, end_date, status, price_snapshot_json)
 - `payments` (booking_id, provider, external_id, status, amount, raw_payload_json)
 - `booking_status_logs` / `payment_status_logs` (audit)

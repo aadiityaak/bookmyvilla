@@ -13,7 +13,7 @@ class HostUserSeeder extends Seeder
             'name' => 'Host',
             'email' => 'host@example.com',
             'role' => 'host',
+            'password' => bcrypt('password'),
         ]);
     }
 }
-
