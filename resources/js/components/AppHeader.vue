@@ -51,26 +51,22 @@ const auth = computed(() => page.props.auth);
 const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
 const canRegister = computed(() => Boolean((page.props as any)?.canRegister));
 
-const isPublicHeader = computed(() =>
-    page.url.startsWith('/explore') ||
-    page.url.startsWith('/bookings') ||
-    page.url.startsWith('/my-property') ||
-    page.url.startsWith('/profile'),
+const isPublicHeader = computed(
+    () => !page.url.startsWith('/admin') && !page.url.startsWith('/settings'),
 );
 
 const role = computed(() => (auth.value?.user as any)?.role ?? null);
-const publicPrimaryHref = computed(() => {
+const myPropertyHref = computed(() => {
     if (!auth.value?.user) return login();
     if (role.value === 'tenant') return '/my-property';
-    return dashboard();
+    return '/properties';
 });
-const publicPrimaryLabel = computed(() => {
-    if (!auth.value?.user) return 'Masuk';
-    if (role.value === 'tenant') return 'My Property';
-    return 'Dashboard';
+const accountHref = computed(() => {
+    if (!auth.value?.user) return login();
+    return '/profile';
 });
 
-const logoHref = computed(() => (auth.value?.user ? dashboard() : '/'));
+const logoHref = computed(() => '/');
 
 const activeItemStyles = 'text-neutral-900';
 
@@ -108,9 +104,12 @@ const rightNavItems: NavItem[] = [
 </script>
 
 <template>
-    <div v-if="isPublicHeader" class="border-b border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)]">
+    <div
+        v-if="isPublicHeader"
+        class="fixed inset-x-0 top-0 z-50 border-b border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)]"
+    >
         <div class="mx-auto flex h-16 w-full max-w-md items-center justify-between px-6">
-            <Link href="/" class="flex items-center gap-2">
+            <Link :href="logoHref" class="flex items-center gap-2">
                 <AppLogo />
             </Link>
 
@@ -119,12 +118,16 @@ const rightNavItems: NavItem[] = [
                     <Link href="/explore">Explore</Link>
                 </Button>
 
+                <Button variant="ghost" as-child>
+                    <Link :href="myPropertyHref">My Property</Link>
+                </Button>
+
                 <div class="w-px self-stretch bg-[color:var(--clay-hairline)]" />
 
                 <Button :variant="auth.user ? 'default' : 'ghost'" as-child>
-                    <Link :href="publicPrimaryHref">{{ publicPrimaryLabel }}</Link>
+                    <Link :href="accountHref">{{ auth.user ? 'Akun' : 'Masuk' }}</Link>
                 </Button>
-                <Button v-if="!auth.user && canRegister" as-child>
+                <Button v-if="!auth.user && canRegister" variant="outline" as-child>
                     <Link :href="register()">Daftar</Link>
                 </Button>
             </nav>

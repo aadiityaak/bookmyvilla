@@ -6,11 +6,19 @@ import { Button } from '@/components/ui/button';
 
 const page = usePage();
 const user = computed(() => (page.props as any)?.auth?.user ?? null);
+const role = computed(() => user.value?.role ?? null);
 const avatarUrl = computed(() => {
     const path = user.value?.avatar;
     if (!path) return null;
     return String(path).startsWith('http') ? String(path) : `/storage/${path}`;
 });
+
+const myPropertyHref = computed(() =>
+    role.value === 'tenant' ? '/my-property' : '/properties',
+);
+const myPropertyDesc = computed(() =>
+    role.value === 'tenant' ? 'Riwayat sewa →' : 'Kelola listing →',
+);
 </script>
 
 <template>
@@ -46,11 +54,11 @@ const avatarUrl = computed(() => {
 
         <div class="grid grid-cols-1 gap-3">
             <Link
-                href="/my-property"
+                :href="myPropertyHref"
                 class="flex items-center justify-between rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)] p-4 text-sm"
             >
                 <div class="font-medium text-[color:var(--clay-ink)]">My Property</div>
-                <div class="text-[color:var(--clay-muted)]">Riwayat sewa →</div>
+                <div class="text-[color:var(--clay-muted)]">{{ myPropertyDesc }}</div>
             </Link>
 
             <Link

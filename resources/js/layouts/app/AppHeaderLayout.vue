@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import type { InertiaLinkProps } from '@inertiajs/vue3';
 import { Link, usePage } from '@inertiajs/vue3';
-import { Building2, Home, LogIn, Search, UserRound } from 'lucide-vue-next';
+import { Building2, Home, Search, UserRound } from 'lucide-vue-next';
 import { computed } from 'vue';
 import AppContent from '@/components/AppContent.vue';
 import AppHeader from '@/components/AppHeader.vue';
 import AppShell from '@/components/AppShell.vue';
 import { Toaster } from '@/components/ui/sonner';
 import { toUrl } from '@/lib/utils';
-import { dashboard, login } from '@/routes';
 import type { BreadcrumbItem } from '@/types';
 
 type Props = {
@@ -33,25 +32,20 @@ const role = computed(() => user.value?.role ?? null);
 const showBottomNav = computed(() => true);
 
 const bottomNavItems = computed<BottomNavItem[]>(() => {
-    const items: BottomNavItem[] = [
+    const myPropertyHref = !user.value
+        ? '/login'
+        : role.value === 'tenant'
+            ? '/my-property'
+            : '/properties';
+
+    const accountHref = !user.value ? '/login' : '/profile';
+
+    return [
         { title: 'Home', href: '/', icon: Home, exact: true },
         { title: 'Explore', href: '/explore', icon: Search },
+        { title: 'My Property', href: myPropertyHref, icon: Building2 },
+        { title: 'Akun', href: accountHref, icon: UserRound },
     ];
-
-    if (!user.value) {
-        items.push({ title: 'My Property', href: login(), icon: Building2 });
-        items.push({ title: 'Masuk', href: login(), icon: LogIn });
-        return items;
-    }
-
-    if (role.value === 'tenant') {
-        items.push({ title: 'My Property', href: '/my-property', icon: Building2 });
-        items.push({ title: 'Akun', href: dashboard(), icon: UserRound });
-        return items;
-    }
-
-    items.push({ title: 'Dashboard', href: dashboard(), icon: UserRound });
-    return items;
 });
 
 const isActive = (item: BottomNavItem) => {
@@ -61,6 +55,8 @@ const isActive = (item: BottomNavItem) => {
     if (href === '/explore') return url.startsWith('/explore');
     if (href === '/bookings') return url.startsWith('/bookings');
     if (href === '/my-property') return url.startsWith('/my-property') || url.startsWith('/bookings');
+    if (href === '/properties') return url.startsWith('/properties');
+    if (href === '/profile') return url.startsWith('/profile');
     return url.startsWith(href);
 };
 </script>
@@ -72,7 +68,7 @@ const isActive = (item: BottomNavItem) => {
             variant="header"
             :class="
                 showBottomNav
-                    ? 'pb-[calc(5.25rem+env(safe-area-inset-bottom))]'
+                    ? 'pt-16 pb-[calc(5.25rem+env(safe-area-inset-bottom))]'
                     : ''
             "
         >

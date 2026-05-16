@@ -21,21 +21,21 @@ Route::middleware(['auth'])->group(function () {
     Route::get('dashboard', function (Request $request) {
         $role = $request->user()?->role;
 
-        if ($role === 'tenant') {
+        if (in_array($role, ['tenant', 'host', 'investor'], true)) {
             return Inertia::render('tenant/Dashboard');
         }
 
         return Inertia::render('Dashboard');
     })->name('dashboard');
+
+    Route::get('profile', [TenantProfileController::class, 'edit'])->name('tenant.profile.edit');
+    Route::patch('profile', [TenantProfileController::class, 'update'])->name('tenant.profile.update');
 });
 
 Route::middleware(['auth', 'role:tenant'])->group(function () {
     Route::get('bookings', [BookingController::class, 'index'])->name('bookings.index');
     Route::post('bookings', [BookingController::class, 'store'])->name('bookings.store');
     Route::get('my-property', [BookingController::class, 'index'])->name('my-property');
-
-    Route::get('profile', [TenantProfileController::class, 'edit'])->name('tenant.profile.edit');
-    Route::patch('profile', [TenantProfileController::class, 'update'])->name('tenant.profile.update');
 });
 
 Route::middleware(['auth', 'role:host,admin,investor'])->group(function () {
