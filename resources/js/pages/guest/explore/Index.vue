@@ -3,6 +3,7 @@ import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import Heading from '@/components/Heading.vue';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
@@ -29,8 +30,12 @@ type PropertiesPaginator = {
 const props = defineProps<{
     filters: {
         q?: string;
+        investor_id?: string;
+        with_photo?: boolean;
+        sort?: string;
     };
     properties: PropertiesPaginator;
+    investors: { id: number; name: string }[];
 }>();
 
 defineOptions({
@@ -46,9 +51,12 @@ defineOptions({
 
 const form = useForm({
     q: props.filters.q ?? '',
+    investor_id: props.filters.investor_id ?? '',
+    with_photo: Boolean(props.filters.with_photo ?? false),
+    sort: props.filters.sort ?? 'latest',
 });
 
-const hasFilters = computed(() => Boolean(form.q));
+const hasFilters = computed(() => Boolean(form.q || form.investor_id || form.with_photo || form.sort !== 'latest'));
 
 const applyFilters = () => {
     router.get('/explore', form.data(), { preserveState: true, replace: true });
@@ -56,6 +64,9 @@ const applyFilters = () => {
 
 const clearFilters = () => {
     form.q = '';
+    form.investor_id = '';
+    form.with_photo = false;
+    form.sort = 'latest';
     applyFilters();
 };
 
@@ -91,8 +102,43 @@ const imageUrl = (path: string | null) => {
                         @keyup.enter="applyFilters"
                     />
                 </div>
-                <div>
-                    <Button class="w-full" @click="applyFilters">Cari</Button>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <Label for="investor_id" class="sr-only">Investor</Label>
+                        <select
+                            id="investor_id"
+                            v-model="form.investor_id"
+                            class="clay-select w-full"
+                            @change="applyFilters"
+                        >
+                            <option value="">Semua investor</option>
+                            <option v-for="inv in investors" :key="inv.id" :value="String(inv.id)">
+                                {{ inv.name }}
+                            </option>
+                        </select>
+                    </div>
+                    <div>
+                        <Label for="sort" class="sr-only">Urutkan</Label>
+                        <select
+                            id="sort"
+                            v-model="form.sort"
+                            class="clay-select w-full"
+                            @change="applyFilters"
+                        >
+                            <option value="latest">Terbaru</option>
+                            <option value="name_asc">Nama A-Z</option>
+                            <option value="name_desc">Nama Z-A</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between gap-3">
+                    <Label class="flex items-center gap-3 text-sm text-[color:var(--clay-body)]">
+                        <Checkbox v-model:checked="form.with_photo" @update:checked="applyFilters" />
+                        <span>Hanya yang ada foto</span>
+                    </Label>
+                    <Button class="shrink-0" variant="outline" @click="applyFilters">Terapkan</Button>
                 </div>
             </div>
 

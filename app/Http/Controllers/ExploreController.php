@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Booking;
 use App\Models\Property;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -14,9 +15,25 @@ class ExploreController extends Controller
     {
         $filters = [
             'q' => $request->string('q')->toString(),
+            'investor_id' => $request->string('investor_id')->toString(),
+            'with_photo' => $request->boolean('with_photo'),
+            'sort' => $request->string('sort')->toString() ?: 'latest',
         ];
 
-        $properties = Property::query()
+        $investorIds = Property::query()
+            ->where('type', 'villa')
+            ->where('status', 'published')
+            ->whereNotNull('investor_id')
+            ->distinct()
+            ->pluck('investor_id');
+
+        $investors = User::query()
+            ->select(['id', 'name'])
+            ->whereIn('id', $investorIds)
+            ->orderBy('name')
+            ->get();
+
+        $propertiesQuery = Property::query()
             ->where('type', 'villa')
             ->where('status', 'published')
             ->when($filters['q'], function ($q, string $term) {
@@ -26,7 +43,25 @@ class ExploreController extends Controller
                         ->orWhere('address', 'like', '%' . $term . '%');
                 });
             })
-            ->orderByDesc('id')
+            ->when($filters['with_photo'], fn($q) => $q->whereNotNull('featured_image'))
+            ->when(
+                is_numeric($filters['investor_id'] ?? null),
+                fn($q) => $q->where('investor_id', (int) $filters['investor_id']),
+            );
+
+        switch ($filters['sort']) {
+            case 'name_asc':
+                $propertiesQuery->orderBy('name');
+                break;
+            case 'name_desc':
+                $propertiesQuery->orderByDesc('name');
+                break;
+            default:
+                $propertiesQuery->orderByDesc('id');
+                break;
+        }
+
+        $properties = $propertiesQuery
             ->paginate(12)
             ->withQueryString()
             ->through(fn(Property $property) => [
@@ -40,6 +75,7 @@ class ExploreController extends Controller
         return Inertia::render('guest/explore/Index', [
             'filters' => $filters,
             'properties' => $properties,
+            'investors' => $investors,
         ]);
     }
 

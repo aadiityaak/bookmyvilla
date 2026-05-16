@@ -35,7 +35,7 @@ import UserMenuContent from '@/components/UserMenuContent.vue';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { getInitials } from '@/composables/useInitials';
 import { toUrl } from '@/lib/utils';
-import { dashboard, login } from '@/routes';
+import { dashboard, login, register } from '@/routes';
 import type { BreadcrumbItem, NavItem } from '@/types';
 
 type Props = {
@@ -49,6 +49,7 @@ const props = withDefaults(defineProps<Props>(), {
 const page = usePage();
 const auth = computed(() => page.props.auth);
 const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
+const canRegister = computed(() => Boolean((page.props as any)?.canRegister));
 
 const isPublicHeader = computed(
     () => !page.url.startsWith('/admin') && !page.url.startsWith('/settings'),
@@ -132,8 +133,14 @@ const rightNavItems: NavItem[] = [
                     </DropdownMenuContent>
                 </DropdownMenu>
 
-                <Button v-else as-child>
-                    <Link :href="login()">Log in</Link>
+                <Button v-else :variant="page.url.startsWith('/login') && canRegister ? 'outline' : 'default'" as-child>
+                    <Link
+                        v-if="page.url.startsWith('/login') && canRegister"
+                        :href="register()"
+                    >
+                        Daftar
+                    </Link>
+                    <Link v-else :href="login()">Masuk</Link>
                 </Button>
             </div>
         </div>
