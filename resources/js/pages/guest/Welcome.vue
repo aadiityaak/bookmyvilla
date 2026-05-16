@@ -213,13 +213,16 @@ const onCarouselWheel = (e: WheelEvent) => {
         return;
     }
 
-    const delta =
-        Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+    const isHorizontalIntent = Math.abs(e.deltaX) > Math.abs(e.deltaY);
+    const allowShiftWheel = e.shiftKey && Math.abs(e.deltaY) > 0;
 
-    if (Math.abs(delta) > 0) {
-        e.preventDefault();
-        el.scrollLeft += delta;
+    if (!isHorizontalIntent && !allowShiftWheel) {
+        return;
     }
+
+    const delta = isHorizontalIntent ? e.deltaX : e.deltaY;
+    e.preventDefault();
+    el.scrollLeft += delta;
 };
 </script>
 
@@ -256,7 +259,7 @@ const onCarouselWheel = (e: WheelEvent) => {
                             </Button>
                         </div>
 
-                        <div class="mt-8 grid gap-6">
+                        <div class="mt-8 flex flex-col gap-6">
                             <div
                                 class="mx-auto w-full max-w-md rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-card)] p-4"
                             >
@@ -317,7 +320,7 @@ const onCarouselWheel = (e: WheelEvent) => {
                                             class="relative w-full overflow-hidden rounded-xl border border-[color:var(--clay-hairline)]"
                                         >
                                             <div
-                                                class="relative aspect-[4/3]"
+                                                class="relative aspect-[16/9] sm:aspect-[4/3]"
                                                 :style="{ backgroundColor: s.bg }"
                                             >
                                                 <img
@@ -357,7 +360,7 @@ const onCarouselWheel = (e: WheelEvent) => {
                                                     {{ s.title }}
                                                 </div>
                                                 <div
-                                                    class="mt-1 text-xs text-[color:var(--clay-muted)]"
+                                                    class="mt-1 line-clamp-2 text-xs text-[color:var(--clay-muted)]"
                                                 >
                                                     {{ s.subtitle }}
                                                 </div>
@@ -427,7 +430,7 @@ const onCarouselWheel = (e: WheelEvent) => {
                                             class="relative w-full overflow-hidden rounded-xl border border-[color:var(--clay-hairline)]"
                                         >
                                             <div
-                                                class="relative aspect-[4/3]"
+                                                class="relative aspect-[16/9] sm:aspect-[4/3]"
                                                 :style="{ backgroundColor: s.bg }"
                                             >
                                                 <img
@@ -459,7 +462,7 @@ const onCarouselWheel = (e: WheelEvent) => {
                                                     {{ s.title }}
                                                 </div>
                                                 <div
-                                                    class="mt-1 text-xs text-[color:var(--clay-muted)]"
+                                                    class="mt-1 line-clamp-2 text-xs text-[color:var(--clay-muted)]"
                                                 >
                                                     {{ s.subtitle }}
                                                 </div>
@@ -578,37 +581,5 @@ const onCarouselWheel = (e: WheelEvent) => {
                 </div>
         </section>
 
-        <section class="border-t border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-soft)]">
-            <div class="mx-auto w-full max-w-md px-6 py-10">
-                <div class="flex flex-col gap-6">
-                    <div>
-                        <div class="text-sm font-medium text-[color:var(--clay-ink)]">
-                            BookMyVilla
-                        </div>
-                        <div class="mt-1 text-sm text-[color:var(--clay-muted)]">
-                            Platform sederhana untuk booking villa harian & manajemen listing.
-                        </div>
-                    </div>
-                    <div class="flex flex-wrap items-center gap-2">
-                        <Button variant="ghost" as-child>
-                            <Link href="/explore">Explore</Link>
-                        </Button>
-                        <template v-if="$page.props.auth.user">
-                            <Button variant="ghost" as-child>
-                                <Link :href="dashboard()">Dashboard</Link>
-                            </Button>
-                        </template>
-                        <template v-else>
-                            <Button variant="ghost" as-child>
-                                <Link :href="login()">Masuk</Link>
-                            </Button>
-                            <Button v-if="props.canRegister" variant="ghost" as-child>
-                                <Link :href="register()">Daftar</Link>
-                            </Button>
-                        </template>
-                    </div>
-                </div>
-            </div>
-        </section>
     </div>
 </template>
