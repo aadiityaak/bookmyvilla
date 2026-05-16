@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import type { InertiaLinkProps } from '@inertiajs/vue3';
 import { Link, usePage } from '@inertiajs/vue3';
-import { Building2, CalendarDays, Home, LogIn, Search, UserPlus, UserRound } from 'lucide-vue-next';
+import { Building2, Home, LogIn, Search, UserRound } from 'lucide-vue-next';
 import { computed } from 'vue';
 import AppContent from '@/components/AppContent.vue';
 import AppHeader from '@/components/AppHeader.vue';
 import AppShell from '@/components/AppShell.vue';
 import { Toaster } from '@/components/ui/sonner';
 import { toUrl } from '@/lib/utils';
-import { dashboard, login, register } from '@/routes';
+import { dashboard, login } from '@/routes';
 import type { BreadcrumbItem } from '@/types';
 
 type Props = {
@@ -29,7 +29,6 @@ type BottomNavItem = {
 const page = usePage();
 const user = computed(() => (page.props as any)?.auth?.user ?? null);
 const role = computed(() => user.value?.role ?? null);
-const canRegister = computed(() => Boolean((page.props as any)?.canRegister));
 
 const showBottomNav = computed(() => true);
 
@@ -40,20 +39,17 @@ const bottomNavItems = computed<BottomNavItem[]>(() => {
     ];
 
     if (!user.value) {
+        items.push({ title: 'My Property', href: login(), icon: Building2 });
         items.push({ title: 'Masuk', href: login(), icon: LogIn });
-        if (canRegister.value) {
-            items.push({ title: 'Daftar', href: register(), icon: UserPlus });
-        }
         return items;
     }
 
     if (role.value === 'tenant') {
-        items.push({ title: 'Bookings', href: '/bookings', icon: CalendarDays });
+        items.push({ title: 'My Property', href: '/my-property', icon: Building2 });
         items.push({ title: 'Akun', href: dashboard(), icon: UserRound });
         return items;
     }
 
-    items.push({ title: 'Property', href: '/properties', icon: Building2 });
     items.push({ title: 'Dashboard', href: dashboard(), icon: UserRound });
     return items;
 });
@@ -64,6 +60,7 @@ const isActive = (item: BottomNavItem) => {
     if (item.exact) return url === href;
     if (href === '/explore') return url.startsWith('/explore');
     if (href === '/bookings') return url.startsWith('/bookings');
+    if (href === '/my-property') return url.startsWith('/my-property') || url.startsWith('/bookings');
     return url.startsWith(href);
 };
 </script>

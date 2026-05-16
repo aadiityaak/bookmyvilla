@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import type { InertiaLinkProps } from '@inertiajs/vue3';
 import { Link, usePage } from '@inertiajs/vue3';
-import { CalendarDays, Home, Search, UserRound } from 'lucide-vue-next';
+import { Building2, Home, Search, UserRound } from 'lucide-vue-next';
 import AppContent from '@/components/AppContent.vue';
 import AppShell from '@/components/AppShell.vue';
 import AppSidebar from '@/components/AppSidebar.vue';
@@ -35,7 +35,7 @@ type BottomNavItem = {
 const bottomNavItems = computed<BottomNavItem[]>(() => [
     { title: 'Home', href: '/', icon: Home, exact: true },
     { title: 'Explore', href: '/explore', icon: Search },
-    { title: 'Bookings', href: '/bookings', icon: CalendarDays },
+    { title: 'My Property', href: '/my-property', icon: Building2 },
     { title: 'Akun', href: dashboard(), icon: UserRound },
 ]);
 
@@ -45,6 +45,7 @@ const isActive = (item: BottomNavItem) => {
     if (item.exact) return url === href;
     if (href === '/explore') return url.startsWith('/explore');
     if (href === '/bookings') return url.startsWith('/bookings');
+    if (href === '/my-property') return url.startsWith('/my-property') || url.startsWith('/bookings');
     return url.startsWith(href);
 };
 </script>
