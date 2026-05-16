@@ -75,6 +75,24 @@ const filteredInvestors = computed(() => {
     });
 });
 
+const ownerSelectValue = computed<string>({
+    get() {
+        return String(form.owner_id ?? '');
+    },
+    set(value) {
+        form.owner_id = Number(value);
+    },
+});
+
+const investorSelectValue = computed<string>({
+    get() {
+        return form.investor_id ? String(form.investor_id) : '__none__';
+    },
+    set(value) {
+        form.investor_id = value === '__none__' ? null : Number(value);
+    },
+});
+
 const form = useForm({
     owner_id: props.property.owner_id,
     investor_id: props.property.investor_id,
@@ -230,7 +248,7 @@ const destroy = () => {
                     <div class="grid gap-6">
                         <div v-if="canManageAll" class="grid gap-2">
                             <Label for="owner_id">User</Label>
-                            <Select v-model="form.owner_id">
+                            <Select v-model="ownerSelectValue">
                                 <SelectTrigger class="clay-select w-full">
                                     <SelectValue placeholder="Select user" />
                                 </SelectTrigger>
@@ -301,7 +319,7 @@ const destroy = () => {
 
                         <div class="grid gap-2">
                             <Label for="investor_id">Investor</Label>
-                            <Select v-model="form.investor_id">
+                            <Select v-model="investorSelectValue">
                                 <SelectTrigger class="clay-select w-full">
                                     <SelectValue placeholder="-" />
                                 </SelectTrigger>
@@ -316,7 +334,7 @@ const destroy = () => {
                                             placeholder="Search investor/host…"
                                         />
                                     </div>
-                                    <SelectItem value="">-</SelectItem>
+                                    <SelectItem value="__none__">-</SelectItem>
                                     <template v-if="filteredInvestors.length">
                                         <SelectItem
                                             v-for="u in filteredInvestors"

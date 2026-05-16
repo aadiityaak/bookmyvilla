@@ -88,7 +88,7 @@ const clearFilters = () => {
             <Heading
                 variant="small"
                 title="Property"
-                description="Manage properties (kost & villa)"
+                description="Manage properties"
             />
 
             <Button v-if="canManage && !isInvestor" as-child>

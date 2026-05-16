@@ -14,6 +14,7 @@ return new class extends Migration
             $table->foreignId('investor_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('type');
             $table->string('name');
+            $table->string('featured_image')->nullable();
             $table->string('address')->nullable();
             $table->text('description')->nullable();
             $table->string('status')->default('draft');
