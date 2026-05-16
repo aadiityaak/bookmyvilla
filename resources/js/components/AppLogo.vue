@@ -3,21 +3,34 @@ import { usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import AppLogoIcon from '@/components/AppLogoIcon.vue';
 
+const props = withDefaults(
+    defineProps<{
+        variant?: 'badge' | 'plain';
+    }>(),
+    {
+        variant: 'badge',
+    },
+);
+
 const page = usePage();
 const branding = computed(() => (page.props as any)?.branding ?? null);
 const appName = computed(() => branding.value?.app_name ?? (page.props as any)?.name ?? 'BookMyVilla');
 const logoUrl = computed(() => branding.value?.logo_url ?? null);
+
+const containerClass = computed(() =>
+    props.variant === 'badge'
+        ? 'flex aspect-square size-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground'
+        : 'flex aspect-square size-8 items-center justify-center',
+);
 </script>
 
 <template>
-    <div
-        class="flex aspect-square size-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground"
-    >
+    <div :class="containerClass">
         <img
             v-if="logoUrl"
             :src="logoUrl"
             :alt="appName"
-            class="h-6 w-6 object-contain"
+            class="h-8 w-8 object-contain"
         />
         <AppLogoIcon v-else class="size-5 fill-current text-white dark:text-black" />
     </div>

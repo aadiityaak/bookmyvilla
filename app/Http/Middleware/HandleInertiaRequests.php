@@ -6,7 +6,6 @@ use App\Models\AppSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Middleware;
 use Laravel\Fortify\Features;
 
@@ -58,7 +57,7 @@ class HandleInertiaRequests extends Middleware
 
             $logoPath = $value['logo_path'] ?? null;
             $logoUrl = is_string($logoPath) && $logoPath !== ''
-                ? Storage::disk('public')->url($logoPath)
+                ? '/storage/' . ltrim($logoPath, '/')
                 : null;
 
             return [

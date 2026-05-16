@@ -99,7 +99,7 @@ const rightNavItems: NavItem[] = [
     >
         <div class="mx-auto flex h-16 w-full max-w-md items-center justify-between px-6">
             <Link :href="logoHref" class="flex items-center gap-2">
-                <AppLogo />
+                <AppLogo variant="plain" />
             </Link>
 
             <div class="flex items-center gap-2">
