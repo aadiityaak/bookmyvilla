@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
 use App\Http\Controllers\Admin\UserController;
@@ -30,6 +32,23 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('profile', [TenantProfileController::class, 'edit'])->name('tenant.profile.edit');
     Route::patch('profile', [TenantProfileController::class, 'update'])->name('tenant.profile.update');
+
+    Route::get('wilayah/regencies', function (Request $request) {
+        if (! Schema::hasTable('reg_regencies')) {
+            return response()->json([]);
+        }
+
+        $provinceId = $request->string('province_id')->toString();
+        if ($provinceId === '') {
+            return response()->json([]);
+        }
+
+        return DB::table('reg_regencies')
+            ->select(['id', 'name'])
+            ->where('province_id', $provinceId)
+            ->orderBy('name')
+            ->get();
+    })->name('wilayah.regencies');
 });
 
 Route::middleware(['auth', 'role:tenant'])->group(function () {

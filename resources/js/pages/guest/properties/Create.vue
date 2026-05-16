@@ -15,6 +15,8 @@ const props = defineProps<{
     canManageAll: boolean;
     owners: { id: number; name: string; email: string; role: string }[];
     investors: { id: number; name: string; email: string; role: string }[];
+    provinces: { id: string; name: string }[];
+    regencies: { id: string; name: string }[];
 }>();
 
 defineOptions({
@@ -37,6 +39,8 @@ const userId = computed(() => (page.props.auth?.user as any)?.id);
 const isClient = ref(false);
 const ownerQuery = ref('');
 const investorQuery = ref('');
+const regencies = ref<{ id: string; name: string }[]>(props.regencies ?? []);
+const regenciesLoading = ref(false);
 
 const filteredOwners = computed(() => {
     const q = ownerQuery.value.trim().toLowerCase();
@@ -87,6 +91,8 @@ const form = useForm({
     name: '',
     featured_image_file: null as File | null,
     address: '',
+    province_id: '',
+    regency_id: '',
     description: '',
     status: 'draft',
     gallery_files: [] as File[],
@@ -174,6 +180,31 @@ const removeGalleryFile = (index: number) => {
 onMounted(() => {
     isClient.value = true;
 });
+
+const loadRegencies = async (provinceId: string) => {
+    if (!provinceId) {
+        regencies.value = [];
+        return;
+    }
+
+    regenciesLoading.value = true;
+    try {
+        const res = await fetch(`/wilayah/regencies?province_id=${encodeURIComponent(provinceId)}`, {
+            credentials: 'same-origin',
+            headers: { Accept: 'application/json' },
+        });
+        const data = (await res.json()) as { id: string; name: string }[];
+        regencies.value = Array.isArray(data) ? data : [];
+    } finally {
+        regenciesLoading.value = false;
+    }
+};
+
+const onProvinceChange = async () => {
+    const provinceId = String(form.province_id ?? '');
+    form.regency_id = '';
+    await loadRegencies(provinceId);
+};
 
 onBeforeUnmount(() => {
     if (featuredImagePreviewUrl.value) {
@@ -340,6 +371,40 @@ const submit = () => {
                             placeholder="Address (optional)"
                         />
                         <InputError :message="form.errors.address" />
+                    </div>
+
+                    <div class="grid gap-2">
+                        <Label for="province_id">Provinsi</Label>
+                        <select
+                            id="province_id"
+                            v-model="form.province_id"
+                            class="clay-select"
+                            @change="onProvinceChange"
+                        >
+                            <option value="">Pilih provinsi</option>
+                            <option v-for="p in props.provinces" :key="p.id" :value="p.id">
+                                {{ p.name }}
+                            </option>
+                        </select>
+                        <InputError :message="form.errors.province_id" />
+                    </div>
+
+                    <div class="grid gap-2">
+                        <Label for="regency_id">Kota/Kabupaten</Label>
+                        <select
+                            id="regency_id"
+                            v-model="form.regency_id"
+                            class="clay-select"
+                            :disabled="!form.province_id || regenciesLoading"
+                        >
+                            <option value="">
+                                {{ form.province_id ? 'Pilih kota/kabupaten' : 'Pilih provinsi dulu' }}
+                            </option>
+                            <option v-for="r in regencies" :key="r.id" :value="r.id">
+                                {{ r.name }}
+                            </option>
+                        </select>
+                        <InputError :message="form.errors.regency_id" />
                     </div>
 
                     <div class="grid gap-2">

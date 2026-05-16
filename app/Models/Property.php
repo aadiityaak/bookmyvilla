@@ -16,6 +16,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'name',
     'featured_image',
     'address',
+    'province_id',
+    'regency_id',
     'description',
     'status',
     'gallery',

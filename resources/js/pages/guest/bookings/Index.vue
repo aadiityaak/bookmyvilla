@@ -147,9 +147,6 @@ const description = computed(() =>
                     <span v-html="link.label" />
                 </Link>
             </div>
-            <div class="text-sm text-[color:var(--clay-muted)]">
-                Total: {{ bookings.total }}
-            </div>
         </div>
     </div>
 </template>

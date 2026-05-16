@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Property;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -85,12 +87,18 @@ class PropertyController extends Controller
             ->orderBy('name')
             ->get();
 
+        $provinces = Schema::hasTable('reg_provinces')
+            ? DB::table('reg_provinces')->select(['id', 'name'])->orderBy('name')->get()
+            : collect();
+
         return Inertia::render('guest/properties/Create', [
             'types' => ['kost', 'villa'],
             'statuses' => ['draft', 'published', 'archived'],
             'canManageAll' => $request->user()?->isAdmin(),
             'owners' => $owners,
             'investors' => $investors,
+            'provinces' => $provinces,
+            'regencies' => [],
         ]);
     }
 
@@ -109,6 +117,8 @@ class PropertyController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'featured_image_file' => ['nullable', 'file', 'image', 'max:51200'],
             'address' => ['nullable', 'string', 'max:255'],
+            'province_id' => ['nullable', 'string', 'size:2'],
+            'regency_id' => ['nullable', 'string', 'size:4'],
             'description' => ['nullable', 'string'],
             'status' => ['required', 'string', Rule::in(['draft', 'published', 'archived'])],
             'gallery_existing' => ['nullable', 'array'],
@@ -145,6 +155,8 @@ class PropertyController extends Controller
             'name' => $validated['name'],
             'featured_image' => $featuredImage,
             'address' => $validated['address'] ?? null,
+            'province_id' => $validated['province_id'] ?? null,
+            'regency_id' => $validated['regency_id'] ?? null,
             'description' => $this->sanitizeRichText($validated['description'] ?? null),
             'status' => $validated['status'],
             'gallery' => $gallery,
@@ -169,6 +181,19 @@ class PropertyController extends Controller
             ->orderBy('name')
             ->get();
 
+        $provinces = Schema::hasTable('reg_provinces')
+            ? DB::table('reg_provinces')->select(['id', 'name'])->orderBy('name')->get()
+            : collect();
+
+        $regencies = [];
+        if (Schema::hasTable('reg_regencies') && is_string($property->province_id) && $property->province_id !== '') {
+            $regencies = DB::table('reg_regencies')
+                ->select(['id', 'name'])
+                ->where('province_id', $property->province_id)
+                ->orderBy('name')
+                ->get();
+        }
+
         return Inertia::render('guest/properties/Edit', [
             'property' => [
                 'id' => $property->id,
@@ -178,6 +203,8 @@ class PropertyController extends Controller
                 'name' => $property->name,
                 'featured_image' => $property->featured_image,
                 'address' => $property->address,
+                'province_id' => $property->province_id,
+                'regency_id' => $property->regency_id,
                 'description' => $property->description,
                 'status' => $property->status,
                 'gallery' => $property->gallery ?? [],
@@ -189,6 +216,8 @@ class PropertyController extends Controller
             'canManageAll' => $request->user()?->isAdmin(),
             'owners' => $owners,
             'investors' => $investors,
+            'provinces' => $provinces,
+            'regencies' => $regencies,
         ]);
     }
 
@@ -210,6 +239,8 @@ class PropertyController extends Controller
             'featured_image_remove' => ['nullable', 'boolean'],
             'featured_image_file' => ['nullable', 'file', 'image', 'max:51200'],
             'address' => ['nullable', 'string', 'max:255'],
+            'province_id' => ['nullable', 'string', 'size:2'],
+            'regency_id' => ['nullable', 'string', 'size:4'],
             'description' => ['nullable', 'string'],
             'status' => ['required', 'string', Rule::in(['draft', 'published', 'archived'])],
             'gallery_existing' => ['nullable', 'array'],
@@ -253,6 +284,8 @@ class PropertyController extends Controller
             'name' => $validated['name'],
             'featured_image' => $featuredImage,
             'address' => $validated['address'] ?? null,
+            'province_id' => $validated['province_id'] ?? null,
+            'regency_id' => $validated['regency_id'] ?? null,
             'description' => $this->sanitizeRichText($validated['description'] ?? null),
             'status' => $validated['status'],
             'gallery' => $gallery,
