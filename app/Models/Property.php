@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'investor_id',
     'type',
     'name',
+    'featured_image',
     'address',
     'description',
     'status',

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Property;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -30,20 +31,21 @@ class PropertyController extends Controller
             ->when($filters['q'], function ($q, string $term) {
                 $q->where(function ($sub) use ($term) {
                     $sub
-                        ->where('name', 'like', '%'.$term.'%')
-                        ->orWhere('address', 'like', '%'.$term.'%')
-                        ->orWhereHas('investor', fn ($inv) => $inv->where('name', 'like', '%'.$term.'%'));
+                        ->where('name', 'like', '%' . $term . '%')
+                        ->orWhere('address', 'like', '%' . $term . '%')
+                        ->orWhereHas('investor', fn($inv) => $inv->where('name', 'like', '%' . $term . '%'));
                 });
             })
-            ->when($filters['type'], fn ($q, string $type) => $q->where('type', $type))
-            ->when($filters['status'], fn ($q, string $status) => $q->where('status', $status))
+            ->when($filters['type'], fn($q, string $type) => $q->where('type', $type))
+            ->when($filters['status'], fn($q, string $status) => $q->where('status', $status))
             ->orderByDesc('id')
             ->paginate(15)
             ->withQueryString()
-            ->through(fn (Property $property) => [
+            ->through(fn(Property $property) => [
                 'id' => $property->id,
                 'type' => $property->type,
                 'name' => $property->name,
+                'featured_image' => $property->featured_image,
                 'address' => $property->address,
                 'investor' => $property->investor ? [
                     'id' => $property->investor->id,
@@ -100,11 +102,12 @@ class PropertyController extends Controller
                 'nullable',
                 'integer',
                 Rule::exists('users', 'id')->where(
-                    fn ($q) => $q->whereIn('role', ['investor', 'host']),
+                    fn($q) => $q->whereIn('role', ['investor', 'host']),
                 ),
             ],
             'type' => ['required', 'string', Rule::in(['kost', 'villa'])],
             'name' => ['required', 'string', 'max:255'],
+            'featured_image_file' => ['nullable', 'file', 'image', 'max:51200'],
             'address' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'status' => ['required', 'string', Rule::in(['draft', 'published', 'archived'])],
@@ -120,7 +123,7 @@ class PropertyController extends Controller
 
         $existingGallery = array_values(array_filter(
             $validated['gallery_existing'] ?? [],
-            fn ($item) => is_string($item) && trim($item) !== '',
+            fn($item) => is_string($item) && trim($item) !== '',
         ));
 
         $storedGallery = [];
@@ -130,11 +133,17 @@ class PropertyController extends Controller
 
         $gallery = array_values(array_merge($existingGallery, $storedGallery));
 
+        $featuredImage = null;
+        if ($request->file('featured_image_file')) {
+            $featuredImage = $request->file('featured_image_file')->store('properties/featured', 'public');
+        }
+
         $property = Property::create([
             'owner_id' => $ownerId,
             'investor_id' => $validated['investor_id'] ?? null,
             'type' => $validated['type'],
             'name' => $validated['name'],
+            'featured_image' => $featuredImage,
             'address' => $validated['address'] ?? null,
             'description' => $this->sanitizeRichText($validated['description'] ?? null),
             'status' => $validated['status'],
@@ -167,6 +176,7 @@ class PropertyController extends Controller
                 'investor_id' => $property->investor_id,
                 'type' => $property->type,
                 'name' => $property->name,
+                'featured_image' => $property->featured_image,
                 'address' => $property->address,
                 'description' => $property->description,
                 'status' => $property->status,
@@ -192,11 +202,13 @@ class PropertyController extends Controller
                 'nullable',
                 'integer',
                 Rule::exists('users', 'id')->where(
-                    fn ($q) => $q->whereIn('role', ['investor', 'host']),
+                    fn($q) => $q->whereIn('role', ['investor', 'host']),
                 ),
             ],
             'type' => ['required', 'string', Rule::in(['kost', 'villa'])],
             'name' => ['required', 'string', 'max:255'],
+            'featured_image_remove' => ['nullable', 'boolean'],
+            'featured_image_file' => ['nullable', 'file', 'image', 'max:51200'],
             'address' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'status' => ['required', 'string', Rule::in(['draft', 'published', 'archived'])],
@@ -212,7 +224,7 @@ class PropertyController extends Controller
 
         $existingGallery = array_values(array_filter(
             $validated['gallery_existing'] ?? ($property->gallery ?? []),
-            fn ($item) => is_string($item) && trim($item) !== '',
+            fn($item) => is_string($item) && trim($item) !== '',
         ));
 
         $storedGallery = [];
@@ -222,10 +234,24 @@ class PropertyController extends Controller
 
         $gallery = array_values(array_merge($existingGallery, $storedGallery));
 
+        $featuredImage = $property->featured_image;
+
+        $removeFeaturedImage = filter_var($validated['featured_image_remove'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        if ($removeFeaturedImage) {
+            $this->deletePublicFileIfLocal($featuredImage);
+            $featuredImage = null;
+        }
+
+        if ($request->file('featured_image_file')) {
+            $this->deletePublicFileIfLocal($featuredImage);
+            $featuredImage = $request->file('featured_image_file')->store('properties/featured', 'public');
+        }
+
         $property->fill([
             'investor_id' => $validated['investor_id'] ?? null,
             'type' => $validated['type'],
             'name' => $validated['name'],
+            'featured_image' => $featuredImage,
             'address' => $validated['address'] ?? null,
             'description' => $this->sanitizeRichText($validated['description'] ?? null),
             'status' => $validated['status'],
@@ -274,5 +300,18 @@ class PropertyController extends Controller
         $html = trim($html);
 
         return $html === '' ? null : $html;
+    }
+
+    private function deletePublicFileIfLocal(?string $path): void
+    {
+        if (! $path) {
+            return;
+        }
+
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return;
+        }
+
+        Storage::disk('public')->delete($path);
     }
 }

@@ -85,11 +85,51 @@ const form = useForm({
     investor_id: null as number | null,
     type: 'villa',
     name: '',
+    featured_image_file: null as File | null,
     address: '',
     description: '',
     status: 'draft',
     gallery_files: [] as File[],
 });
+
+const featuredImageInputRef = ref<HTMLInputElement | null>(null);
+const featuredImageDragOver = ref(false);
+const featuredImagePreviewUrl = ref<string | null>(null);
+
+const setFeaturedImage = (file: File | null) => {
+    if (featuredImagePreviewUrl.value) {
+        URL.revokeObjectURL(featuredImagePreviewUrl.value);
+        featuredImagePreviewUrl.value = null;
+    }
+
+    form.featured_image_file = file;
+
+    if (file) {
+        featuredImagePreviewUrl.value = URL.createObjectURL(file);
+    }
+};
+
+const onFeaturedImageSelected = (event: Event) => {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    if (file && file.type.startsWith('image/')) {
+        setFeaturedImage(file);
+    }
+    input.value = '';
+};
+
+const onFeaturedImageDrop = (event: DragEvent) => {
+    event.preventDefault();
+    featuredImageDragOver.value = false;
+    const file = event.dataTransfer?.files?.[0] ?? null;
+    if (file && file.type.startsWith('image/')) {
+        setFeaturedImage(file);
+    }
+};
+
+const clearFeaturedImage = () => {
+    setFeaturedImage(null);
+};
 
 const galleryInputRef = ref<HTMLInputElement | null>(null);
 const galleryDragOver = ref(false);
@@ -136,6 +176,9 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+    if (featuredImagePreviewUrl.value) {
+        URL.revokeObjectURL(featuredImagePreviewUrl.value);
+    }
     for (const item of galleryPreviews.value) {
         URL.revokeObjectURL(item.url);
     }
@@ -233,6 +276,59 @@ const submit = () => {
                             placeholder="Property name"
                         />
                         <InputError :message="form.errors.name" />
+                    </div>
+
+                    <div class="grid gap-2">
+                        <Label>Featured image</Label>
+                        <div
+                            class="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-soft)] px-4 py-8 text-center"
+                            :class="[
+                                featuredImageDragOver
+                                    ? 'border-[color:var(--clay-ink)]'
+                                    : '',
+                            ]"
+                            @click="featuredImageInputRef?.click()"
+                            @dragenter.prevent="featuredImageDragOver = true"
+                            @dragover.prevent="featuredImageDragOver = true"
+                            @dragleave.prevent="featuredImageDragOver = false"
+                            @drop="onFeaturedImageDrop"
+                        >
+                            <div class="text-sm font-medium text-[color:var(--clay-ink)]">
+                                Choose a file or drag & drop here
+                            </div>
+                            <div class="text-xs text-[color:var(--clay-muted)]">
+                                PNG/JPG up to 50MB
+                            </div>
+                            <Button type="button" variant="outline">
+                                Browse file
+                            </Button>
+                            <input
+                                ref="featuredImageInputRef"
+                                type="file"
+                                accept="image/*"
+                                class="hidden"
+                                @change="onFeaturedImageSelected"
+                            />
+                        </div>
+
+                        <div v-if="featuredImagePreviewUrl" class="relative overflow-hidden rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)]">
+                            <img
+                                :src="featuredImagePreviewUrl"
+                                alt=""
+                                class="h-44 w-full object-cover"
+                            />
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                class="absolute top-2 right-2 bg-[color:var(--clay-canvas)]"
+                                @click="clearFeaturedImage"
+                            >
+                                Remove
+                            </Button>
+                        </div>
+
+                        <InputError :message="form.errors.featured_image_file" />
                     </div>
 
                     <div class="grid gap-2">

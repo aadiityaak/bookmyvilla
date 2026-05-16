@@ -47,6 +47,7 @@ class PropertySeeder extends Seeder
           : null,
         'type' => $type,
         'name' => $name,
+        'featured_image' => fake()->optional(0.8)->passthrough('https://picsum.photos/seed/' . fake()->uuid() . '/1200/800'),
         'address' => fake()->optional(0.9)->address(),
         'description' => fake()->optional(0.7)->paragraphs(asText: true),
         'status' => $status,

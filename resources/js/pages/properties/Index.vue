@@ -10,6 +10,7 @@ type PropertyRow = {
     id: number;
     type: string;
     name: string;
+    featured_image: string | null;
     address: string | null;
     investor: { id: number; name: string; email: string; role: string } | null;
     status: string;
@@ -153,11 +154,11 @@ const clearFilters = () => {
             <div
                 class="grid grid-cols-12 gap-3 border-b border-[color:var(--clay-hairline)] px-5 py-3 text-xs font-medium uppercase tracking-wide text-[color:var(--clay-muted)]"
             >
-                <div class="col-span-3">Name</div>
+                <div class="col-span-4">Property</div>
                 <div class="col-span-2">Type</div>
                 <div class="col-span-3">Investor</div>
                 <div class="col-span-2">Status</div>
-                <div class="col-span-2 text-right">Action</div>
+                <div class="col-span-1 text-right">Action</div>
             </div>
 
             <div
@@ -165,8 +166,29 @@ const clearFilters = () => {
                 :key="property.id"
                 class="grid grid-cols-12 gap-3 border-b border-[color:var(--clay-hairline)] px-5 py-4 text-sm last:border-b-0 hover:bg-[color:var(--clay-surface-soft)]"
             >
-                <div class="col-span-3 truncate font-medium text-[color:var(--clay-ink)]">
-                    {{ property.name }}
+                <div class="col-span-4 flex min-w-0 items-center gap-3">
+                    <div
+                        class="h-10 w-14 overflow-hidden rounded-md border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-card)]"
+                    >
+                        <img
+                            v-if="property.featured_image"
+                            :src="
+                                property.featured_image.startsWith('http')
+                                    ? property.featured_image
+                                    : `/storage/${property.featured_image}`
+                            "
+                            alt=""
+                            class="h-full w-full object-cover"
+                        />
+                    </div>
+                    <div class="min-w-0">
+                        <div class="truncate font-medium text-[color:var(--clay-ink)]">
+                            {{ property.name }}
+                        </div>
+                        <div class="truncate text-xs text-[color:var(--clay-muted)]">
+                            {{ property.address ?? '-' }}
+                        </div>
+                    </div>
                 </div>
                 <div class="col-span-2 text-[color:var(--clay-body)]">
                     {{ property.type }}
@@ -181,7 +203,7 @@ const clearFilters = () => {
                 <div class="col-span-2 text-[color:var(--clay-body)]">
                     {{ property.status }}
                 </div>
-                <div class="col-span-2 flex justify-end">
+                <div class="col-span-1 flex justify-end">
                     <Button
                         v-if="canManage && !isInvestor"
                         variant="ghost"
