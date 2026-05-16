@@ -106,8 +106,10 @@ Route::middleware(['auth', 'role:host,admin'])->group(function () {
 
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::redirect('settings', '/admin/settings/branding');
-    Route::inertia('settings/branding', 'admin/settings/Branding')->name('settings.branding');
-    Route::inertia('settings/sosmed', 'admin/settings/Sosmed')->name('settings.sosmed');
+    Route::get('settings/branding', [\App\Http\Controllers\Admin\SettingsController::class, 'brandingEdit'])->name('settings.branding');
+    Route::patch('settings/branding', [\App\Http\Controllers\Admin\SettingsController::class, 'brandingUpdate'])->name('settings.branding.update');
+    Route::get('settings/sosmed', [\App\Http\Controllers\Admin\SettingsController::class, 'sosmedEdit'])->name('settings.sosmed');
+    Route::patch('settings/sosmed', [\App\Http\Controllers\Admin\SettingsController::class, 'sosmedUpdate'])->name('settings.sosmed.update');
 
     Route::get('users', [UserController::class, 'index'])->name('users.index');
     Route::get('users/create', [UserController::class, 'create'])->name('users.create');

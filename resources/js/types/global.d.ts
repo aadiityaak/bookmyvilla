@@ -17,6 +17,13 @@ declare module '@inertiajs/core' {
     export interface InertiaConfig {
         sharedPageProps: {
             name: string;
+            branding?: {
+                app_name?: string;
+                tagline?: string | null;
+                logo_url?: string | null;
+                primary_color?: string | null;
+                secondary_color?: string | null;
+            };
             auth: Auth;
             sidebarOpen: boolean;
             [key: string]: unknown;

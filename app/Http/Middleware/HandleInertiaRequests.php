@@ -2,7 +2,11 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\AppSetting;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Middleware;
 use Laravel\Fortify\Features;
 
@@ -36,9 +40,48 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $branding = Cache::remember('app_branding', 60, function () {
+            $default = [
+                'app_name' => config('app.name'),
+                'tagline' => null,
+                'logo_url' => null,
+                'primary_color' => null,
+                'secondary_color' => null,
+            ];
+
+            if (! Schema::hasTable('app_settings')) {
+                return $default;
+            }
+
+            $row = AppSetting::query()->where('key', 'branding')->first();
+            $value = is_array($row?->value) ? $row->value : [];
+
+            $logoPath = $value['logo_path'] ?? null;
+            $logoUrl = is_string($logoPath) && $logoPath !== ''
+                ? Storage::disk('public')->url($logoPath)
+                : null;
+
+            return [
+                'app_name' => is_string($value['app_name'] ?? null) && $value['app_name'] !== ''
+                    ? $value['app_name']
+                    : $default['app_name'],
+                'tagline' => is_string($value['tagline'] ?? null) && $value['tagline'] !== ''
+                    ? $value['tagline']
+                    : null,
+                'logo_url' => $logoUrl,
+                'primary_color' => is_string($value['primary_color'] ?? null) && $value['primary_color'] !== ''
+                    ? $value['primary_color']
+                    : null,
+                'secondary_color' => is_string($value['secondary_color'] ?? null) && $value['secondary_color'] !== ''
+                    ? $value['secondary_color']
+                    : null,
+            ];
+        });
+
         return [
             ...parent::share($request),
-            'name' => config('app.name'),
+            'name' => $branding['app_name'] ?? config('app.name'),
+            'branding' => $branding,
             'canRegister' => Features::enabled(Features::registration()),
             'auth' => [
                 'user' => $request->user(),
