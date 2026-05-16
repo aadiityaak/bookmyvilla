@@ -10,7 +10,7 @@ use App\Http\Controllers\ExploreController;
 use App\Http\Controllers\PropertyController;
 use App\Http\Controllers\Tenant\ProfileController as TenantProfileController;
 
-Route::inertia('/', 'Welcome', [
+Route::inertia('/', 'guest/Welcome', [
     'canRegister' => Features::enabled(Features::registration()),
 ])->name('home');
 
@@ -22,10 +22,10 @@ Route::middleware(['auth'])->group(function () {
         $role = $request->user()?->role;
 
         if (in_array($role, ['tenant', 'host', 'investor'], true)) {
-            return Inertia::render('tenant/Dashboard');
+            return Inertia::render('guest/Dashboard');
         }
 
-        return Inertia::render('Dashboard');
+        return Inertia::render('admin/Dashboard');
     })->name('dashboard');
 
     Route::get('profile', [TenantProfileController::class, 'edit'])->name('tenant.profile.edit');

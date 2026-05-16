@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid, Menu, Search } from 'lucide-vue-next';
+import { Bell, BookOpen, Folder, LayoutGrid, Menu, Search } from 'lucide-vue-next';
 import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
 import AppLogoIcon from '@/components/AppLogoIcon.vue';
@@ -35,7 +35,7 @@ import UserMenuContent from '@/components/UserMenuContent.vue';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { getInitials } from '@/composables/useInitials';
 import { toUrl } from '@/lib/utils';
-import { dashboard, login, register } from '@/routes';
+import { dashboard, login } from '@/routes';
 import type { BreadcrumbItem, NavItem } from '@/types';
 
 type Props = {
@@ -49,22 +49,10 @@ const props = withDefaults(defineProps<Props>(), {
 const page = usePage();
 const auth = computed(() => page.props.auth);
 const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
-const canRegister = computed(() => Boolean((page.props as any)?.canRegister));
 
 const isPublicHeader = computed(
     () => !page.url.startsWith('/admin') && !page.url.startsWith('/settings'),
 );
-
-const role = computed(() => (auth.value?.user as any)?.role ?? null);
-const myPropertyHref = computed(() => {
-    if (!auth.value?.user) return login();
-    if (role.value === 'tenant') return '/my-property';
-    return '/properties';
-});
-const accountHref = computed(() => {
-    if (!auth.value?.user) return login();
-    return '/profile';
-});
 
 const logoHref = computed(() => '/');
 
@@ -113,24 +101,41 @@ const rightNavItems: NavItem[] = [
                 <AppLogo />
             </Link>
 
-            <nav class="flex items-center gap-2">
-                <Button variant="ghost" as-child>
-                    <Link href="/explore">Explore</Link>
+            <div class="flex items-center gap-2">
+                <Button v-if="auth.user" variant="ghost" size="icon" class="h-9 w-9">
+                    <Bell class="h-5 w-5 opacity-80" />
                 </Button>
 
-                <Button variant="ghost" as-child>
-                    <Link :href="myPropertyHref">My Property</Link>
-                </Button>
+                <DropdownMenu v-if="auth.user">
+                    <DropdownMenuTrigger :as-child="true">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            class="relative size-10 w-auto rounded-full p-1 focus-within:ring-2 focus-within:ring-primary"
+                        >
+                            <Avatar class="size-8 overflow-hidden rounded-full">
+                                <AvatarImage
+                                    v-if="auth.user?.avatar"
+                                    :src="String(auth.user?.avatar).startsWith('http') ? auth.user?.avatar : `/storage/${auth.user?.avatar}`"
+                                    :alt="String(auth.user?.name ?? '')"
+                                />
+                                <AvatarFallback
+                                    class="rounded-lg bg-neutral-200 font-semibold text-black dark:bg-neutral-700 dark:text-white"
+                                >
+                                    {{ getInitials(auth.user?.name) }}
+                                </AvatarFallback>
+                            </Avatar>
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" class="w-56">
+                        <UserMenuContent :user="auth.user" />
+                    </DropdownMenuContent>
+                </DropdownMenu>
 
-                <div class="w-px self-stretch bg-[color:var(--clay-hairline)]" />
-
-                <Button :variant="auth.user ? 'default' : 'ghost'" as-child>
-                    <Link :href="accountHref">{{ auth.user ? 'Akun' : 'Masuk' }}</Link>
+                <Button v-else as-child>
+                    <Link :href="login()">Log in</Link>
                 </Button>
-                <Button v-if="!auth.user && canRegister" variant="outline" as-child>
-                    <Link :href="register()">Daftar</Link>
-                </Button>
-            </nav>
+            </div>
         </div>
     </div>
 

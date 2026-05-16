@@ -37,7 +37,7 @@ class ExploreController extends Controller
                 'address' => $property->address,
             ]);
 
-        return Inertia::render('explore/Index', [
+        return Inertia::render('guest/explore/Index', [
             'filters' => $filters,
             'properties' => $properties,
         ]);
@@ -63,7 +63,7 @@ class ExploreController extends Controller
             ])
             ->all();
 
-        return Inertia::render('explore/Show', [
+        return Inertia::render('guest/explore/Show', [
             'property' => [
                 'id' => $property->id,
                 'type' => $property->type,
@@ -78,4 +78,3 @@ class ExploreController extends Controller
         ]);
     }
 }
-

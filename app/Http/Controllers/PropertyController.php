@@ -63,7 +63,7 @@ class PropertyController extends Controller
                 'created_at' => optional($property->created_at)?->toISOString(),
             ]);
 
-        return Inertia::render('properties/Index', [
+        return Inertia::render('guest/properties/Index', [
             'filters' => $filters,
             'properties' => $properties,
             'types' => ['kost', 'villa'],
@@ -85,7 +85,7 @@ class PropertyController extends Controller
             ->orderBy('name')
             ->get();
 
-        return Inertia::render('properties/Create', [
+        return Inertia::render('guest/properties/Create', [
             'types' => ['kost', 'villa'],
             'statuses' => ['draft', 'published', 'archived'],
             'canManageAll' => $request->user()?->isAdmin(),
@@ -169,7 +169,7 @@ class PropertyController extends Controller
             ->orderBy('name')
             ->get();
 
-        return Inertia::render('properties/Edit', [
+        return Inertia::render('guest/properties/Edit', [
             'property' => [
                 'id' => $property->id,
                 'owner_id' => $property->owner_id,

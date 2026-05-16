@@ -33,7 +33,7 @@ class BookingController extends Controller
                 'created_at' => optional($booking->created_at)?->toISOString(),
             ]);
 
-        return Inertia::render('bookings/Index', [
+        return Inertia::render('guest/bookings/Index', [
             'bookings' => $bookings,
         ]);
     }
@@ -82,4 +82,3 @@ class BookingController extends Controller
         return to_route('bookings.index');
     }
 }
-
