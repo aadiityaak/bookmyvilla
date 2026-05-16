@@ -108,20 +108,37 @@ class PropertyController extends Controller
             'address' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'status' => ['required', 'string', Rule::in(['draft', 'published', 'archived'])],
-            'gallery' => ['nullable', 'array'],
-            'gallery.*' => ['nullable', 'string', 'max:2048'],
+            'gallery_existing' => ['nullable', 'array'],
+            'gallery_existing.*' => ['nullable', 'string', 'max:2048'],
+            'gallery_files' => ['nullable', 'array'],
+            'gallery_files.*' => ['nullable', 'file', 'image', 'max:51200'],
         ]);
 
         $ownerId = $request->user()?->isAdmin()
             ? ($validated['owner_id'] ?? $request->user()->id)
             : $request->user()->id;
 
+        $existingGallery = array_values(array_filter(
+            $validated['gallery_existing'] ?? [],
+            fn ($item) => is_string($item) && trim($item) !== '',
+        ));
+
+        $storedGallery = [];
+        foreach ($request->file('gallery_files', []) as $file) {
+            $storedGallery[] = $file->store('properties/gallery', 'public');
+        }
+
+        $gallery = array_values(array_merge($existingGallery, $storedGallery));
+
         $property = Property::create([
-            ...$validated,
             'owner_id' => $ownerId,
-            'gallery' => isset($validated['gallery'])
-                ? array_values(array_filter($validated['gallery'], fn ($item) => is_string($item) && trim($item) !== ''))
-                : null,
+            'investor_id' => $validated['investor_id'] ?? null,
+            'type' => $validated['type'],
+            'name' => $validated['name'],
+            'address' => $validated['address'] ?? null,
+            'description' => $this->sanitizeRichText($validated['description'] ?? null),
+            'status' => $validated['status'],
+            'gallery' => $gallery,
         ]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Property created.')]);
@@ -183,24 +200,36 @@ class PropertyController extends Controller
             'address' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'status' => ['required', 'string', Rule::in(['draft', 'published', 'archived'])],
-            'gallery' => ['nullable', 'array'],
-            'gallery.*' => ['nullable', 'string', 'max:2048'],
+            'gallery_existing' => ['nullable', 'array'],
+            'gallery_existing.*' => ['nullable', 'string', 'max:2048'],
+            'gallery_files' => ['nullable', 'array'],
+            'gallery_files.*' => ['nullable', 'file', 'image', 'max:51200'],
         ]);
 
         if ($request->user()?->isAdmin() && isset($validated['owner_id'])) {
             $property->owner_id = $validated['owner_id'];
         }
 
+        $existingGallery = array_values(array_filter(
+            $validated['gallery_existing'] ?? ($property->gallery ?? []),
+            fn ($item) => is_string($item) && trim($item) !== '',
+        ));
+
+        $storedGallery = [];
+        foreach ($request->file('gallery_files', []) as $file) {
+            $storedGallery[] = $file->store('properties/gallery', 'public');
+        }
+
+        $gallery = array_values(array_merge($existingGallery, $storedGallery));
+
         $property->fill([
             'investor_id' => $validated['investor_id'] ?? null,
             'type' => $validated['type'],
             'name' => $validated['name'],
             'address' => $validated['address'] ?? null,
-            'description' => $validated['description'] ?? null,
+            'description' => $this->sanitizeRichText($validated['description'] ?? null),
             'status' => $validated['status'],
-            'gallery' => isset($validated['gallery'])
-                ? array_values(array_filter($validated['gallery'], fn ($item) => is_string($item) && trim($item) !== ''))
-                : [],
+            'gallery' => $gallery,
         ]);
 
         $property->save();
@@ -228,5 +257,22 @@ class PropertyController extends Controller
         }
 
         abort_unless($request->user() && $property->owner_id === $request->user()->id, 403);
+    }
+
+    private function sanitizeRichText(?string $html): ?string
+    {
+        if ($html === null) {
+            return null;
+        }
+
+        $allowedTags = '<p><br><strong><b><em><i><u><ul><ol><li><a><blockquote><code><pre><h3><h4>';
+        $html = strip_tags($html, $allowedTags);
+        $html = preg_replace('/\son\w+\s*=\s*"[^"]*"/i', '', $html) ?? '';
+        $html = preg_replace("/\son\w+\s*=\s*'[^']*'/i", '', $html) ?? '';
+        $html = preg_replace('/href\s*=\s*("|\')\s*(javascript:|data:)[^"\']*\1/i', '', $html) ?? '';
+
+        $html = trim($html);
+
+        return $html === '' ? null : $html;
     }
 }

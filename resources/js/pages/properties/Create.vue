@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const props = defineProps<{
     types: string[];
@@ -32,11 +33,11 @@ defineOptions({
 
 const page = usePage();
 const userId = computed(() => (page.props.auth?.user as any)?.id);
-const ownerSearch = ref('');
-const investorSearch = ref('');
+const ownerQuery = ref('');
+const investorQuery = ref('');
 
 const filteredOwners = computed(() => {
-    const q = ownerSearch.value.trim().toLowerCase();
+    const q = ownerQuery.value.trim().toLowerCase();
     if (!q) return props.owners;
     return props.owners.filter((u) => {
         return (
@@ -48,7 +49,7 @@ const filteredOwners = computed(() => {
 });
 
 const filteredInvestors = computed(() => {
-    const q = investorSearch.value.trim().toLowerCase();
+    const q = investorQuery.value.trim().toLowerCase();
     if (!q) return props.investors;
     return props.investors.filter((u) => {
         return (
@@ -67,22 +68,85 @@ const form = useForm({
     address: '',
     description: '',
     status: 'draft',
-    gallery: [] as string[],
+    gallery_files: [] as File[],
 });
 
-const addGalleryItem = () => {
-    form.gallery.push('');
+const galleryInputRef = ref<HTMLInputElement | null>(null);
+const galleryDragOver = ref(false);
+const galleryPreviews = ref<{ file: File; url: string }[]>([]);
+
+const addGalleryFiles = (files: File[]) => {
+    const imageFiles = files.filter((file) => file.type.startsWith('image/'));
+    if (!imageFiles.length) return;
+
+    form.gallery_files = [...form.gallery_files, ...imageFiles];
+    galleryPreviews.value = [
+        ...galleryPreviews.value,
+        ...imageFiles.map((file) => ({ file, url: URL.createObjectURL(file) })),
+    ];
 };
 
-const removeGalleryItem = (index: number) => {
-    form.gallery.splice(index, 1);
+const onGalleryFilesSelected = (event: Event) => {
+    const input = event.target as HTMLInputElement;
+    const files = input.files ? Array.from(input.files) : [];
+    if (!files.length) return;
+    addGalleryFiles(files);
+    input.value = '';
 };
+
+const onGalleryDrop = (event: DragEvent) => {
+    event.preventDefault();
+    galleryDragOver.value = false;
+    const files = event.dataTransfer?.files ? Array.from(event.dataTransfer.files) : [];
+    if (!files.length) return;
+    addGalleryFiles(files);
+};
+
+const removeGalleryFile = (index: number) => {
+    const preview = galleryPreviews.value[index];
+    if (preview) {
+        URL.revokeObjectURL(preview.url);
+        galleryPreviews.value.splice(index, 1);
+    }
+    form.gallery_files.splice(index, 1);
+};
+
+onBeforeUnmount(() => {
+    for (const item of galleryPreviews.value) {
+        URL.revokeObjectURL(item.url);
+    }
+});
 
 const submit = () => {
     form.post('/properties', {
         preserveScroll: true,
+        forceFormData: true,
     });
 };
+
+const descriptionEditorRef = ref<HTMLDivElement | null>(null);
+
+const syncDescriptionFromEditor = () => {
+    if (!descriptionEditorRef.value) return;
+    form.description = descriptionEditorRef.value.innerHTML;
+};
+
+const applyDescriptionCommand = (command: string, value?: string) => {
+    descriptionEditorRef.value?.focus();
+    document.execCommand(command, false, value);
+    syncDescriptionFromEditor();
+};
+
+const addDescriptionLink = () => {
+    const url = window.prompt('Link URL');
+    if (!url) return;
+    applyDescriptionCommand('createLink', url);
+};
+
+onMounted(() => {
+    if (!descriptionEditorRef.value) return;
+    descriptionEditorRef.value.innerHTML = form.description || '';
+});
 </script>
 
 <template>
@@ -111,25 +175,35 @@ const submit = () => {
                 <div class="grid gap-6">
                     <div v-if="canManageAll" class="grid gap-2">
                         <Label for="owner_id">User</Label>
-                        <Input
-                            id="owner_search"
-                            v-model="ownerSearch"
-                            class="clay-control"
-                            placeholder="Search user by name/email/role"
-                        />
-                        <select
-                            id="owner_id"
-                            v-model="form.owner_id"
-                            class="clay-select"
-                        >
-                            <option
-                                v-for="u in filteredOwners"
-                                :key="u.id"
-                                :value="u.id"
-                            >
-                                {{ u.name }} ({{ u.email }}) — {{ u.role }}
-                            </option>
-                        </select>
+                        <Select v-model="form.owner_id">
+                            <SelectTrigger class="clay-select w-full">
+                                <SelectValue placeholder="Select user" />
+                            </SelectTrigger>
+                            <SelectContent class="w-(--reka-select-trigger-width)">
+                                <div class="p-2">
+                                    <Input
+                                        v-model="ownerQuery"
+                                        class="clay-control h-9"
+                                        placeholder="Search user…"
+                                    />
+                                </div>
+                                <template v-if="filteredOwners.length">
+                                    <SelectItem
+                                        v-for="u in filteredOwners"
+                                        :key="u.id"
+                                        :value="String(u.id)"
+                                    >
+                                        {{ u.name }} ({{ u.email }}) — {{ u.role }}
+                                    </SelectItem>
+                                </template>
+                                <div
+                                    v-else
+                                    class="px-3 py-2 text-sm text-muted-foreground"
+                                >
+                                    No results
+                                </div>
+                            </SelectContent>
+                        </Select>
                         <InputError :message="form.errors.owner_id" />
                     </div>
 
@@ -171,26 +245,36 @@ const submit = () => {
 
                     <div class="grid gap-2">
                         <Label for="investor_id">Investor</Label>
-                        <Input
-                            id="investor_search"
-                            v-model="investorSearch"
-                            class="clay-control"
-                            placeholder="Search investor/host by name/email"
-                        />
-                        <select
-                            id="investor_id"
-                            v-model="form.investor_id"
-                            class="clay-select"
-                        >
-                            <option :value="null">-</option>
-                            <option
-                                v-for="u in filteredInvestors"
-                                :key="u.id"
-                                :value="u.id"
-                            >
-                                {{ u.name }} ({{ u.email }}) — {{ u.role }}
-                            </option>
-                        </select>
+                        <Select v-model="form.investor_id">
+                            <SelectTrigger class="clay-select w-full">
+                                <SelectValue placeholder="-" />
+                            </SelectTrigger>
+                            <SelectContent class="w-(--reka-select-trigger-width)">
+                                <div class="p-2">
+                                    <Input
+                                        v-model="investorQuery"
+                                        class="clay-control h-9"
+                                        placeholder="Search investor/host…"
+                                    />
+                                </div>
+                                <SelectItem value="">-</SelectItem>
+                                <template v-if="filteredInvestors.length">
+                                    <SelectItem
+                                        v-for="u in filteredInvestors"
+                                        :key="u.id"
+                                        :value="String(u.id)"
+                                    >
+                                        {{ u.name }} ({{ u.email }}) — {{ u.role }}
+                                    </SelectItem>
+                                </template>
+                                <div
+                                    v-else
+                                    class="px-3 py-2 text-sm text-muted-foreground"
+                                >
+                                    No results
+                                </div>
+                            </SelectContent>
+                        </Select>
                         <InputError :message="form.errors.investor_id" />
                     </div>
 
@@ -210,11 +294,71 @@ const submit = () => {
 
                     <div class="grid gap-2">
                         <Label for="description">Description</Label>
-                        <textarea
+                        <div class="flex flex-wrap items-center gap-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                @click="applyDescriptionCommand('bold')"
+                            >
+                                Bold
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                @click="applyDescriptionCommand('italic')"
+                            >
+                                Italic
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                @click="applyDescriptionCommand('underline')"
+                            >
+                                Underline
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                @click="applyDescriptionCommand('insertUnorderedList')"
+                            >
+                                Bullets
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                @click="applyDescriptionCommand('insertOrderedList')"
+                            >
+                                Numbered
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                @click="addDescriptionLink"
+                            >
+                                Link
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                @click="applyDescriptionCommand('removeFormat')"
+                            >
+                                Clear
+                            </Button>
+                        </div>
+                        <div
                             id="description"
-                            v-model="form.description"
-                            class="clay-textarea"
-                            placeholder="Description (optional)"
+                            ref="descriptionEditorRef"
+                            class="clay-textarea min-h-32"
+                            contenteditable="true"
+                            @input="syncDescriptionFromEditor"
+                            @blur="syncDescriptionFromEditor"
                         />
                         <InputError :message="form.errors.description" />
                     </div>
@@ -222,37 +366,73 @@ const submit = () => {
                     <div class="grid gap-2">
                         <div class="flex items-center justify-between gap-3">
                             <Label>Gallery</Label>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                @click="addGalleryItem"
-                            >
-                                Add
-                            </Button>
                         </div>
 
-                        <div v-if="form.gallery.length" class="grid gap-2">
+                        <div
+                            class="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-soft)] px-4 py-8 text-center"
+                            :class="[
+                                galleryDragOver
+                                    ? 'border-[color:var(--clay-ink)]'
+                                    : '',
+                            ]"
+                            @click="galleryInputRef?.click()"
+                            @dragenter.prevent="galleryDragOver = true"
+                            @dragover.prevent="galleryDragOver = true"
+                            @dragleave.prevent="galleryDragOver = false"
+                            @drop="onGalleryDrop"
+                        >
+                            <div class="text-sm font-medium text-[color:var(--clay-ink)]">
+                                Choose files or drag & drop here
+                            </div>
+                            <div class="text-xs text-[color:var(--clay-muted)]">
+                                PNG/JPG up to 50MB each
+                            </div>
+                            <Button type="button" variant="outline">
+                                Browse files
+                            </Button>
+                            <input
+                                ref="galleryInputRef"
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                class="hidden"
+                                @change="onGalleryFilesSelected"
+                            />
+                        </div>
+
+                        <div v-if="galleryPreviews.length" class="grid grid-cols-2 gap-3 md:grid-cols-3">
                             <div
-                                v-for="(item, index) in form.gallery"
-                                :key="index"
-                                class="flex items-center gap-2"
+                                v-for="(item, index) in galleryPreviews"
+                                :key="`${item.file.name}-${index}`"
+                                class="relative overflow-hidden rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)]"
                             >
-                                <Input
-                                    :id="`gallery_${index}`"
-                                    v-model="form.gallery[index]"
-                                    class="clay-control"
-                                    placeholder="Image URL or path"
+                                <img
+                                    :src="item.url"
+                                    alt=""
+                                    class="h-28 w-full object-cover"
                                 />
+                                <div class="flex items-center justify-between gap-2 px-3 py-2">
+                                    <div class="min-w-0">
+                                        <div class="truncate text-sm font-medium text-[color:var(--clay-ink)]">
+                                            {{ item.file.name }}
+                                        </div>
+                                        <div class="text-xs text-[color:var(--clay-muted)]">
+                                            {{ Math.round(item.file.size / 1024) }} KB
+                                        </div>
+                                    </div>
+                                </div>
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    @click="removeGalleryItem(index)"
+                                    size="sm"
+                                    class="absolute top-2 right-2 bg-[color:var(--clay-canvas)]"
+                                    @click="removeGalleryFile(index)"
                                 >
                                     Remove
                                 </Button>
                             </div>
                         </div>
-                        <InputError :message="form.errors.gallery" />
+                        <InputError :message="form.errors.gallery_files" />
                     </div>
 
                     <div class="flex items-center justify-end gap-2">

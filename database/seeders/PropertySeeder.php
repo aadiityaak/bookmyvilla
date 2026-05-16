@@ -10,7 +10,11 @@ class PropertySeeder extends Seeder
 {
   public function run(): void
   {
-    $ownerIds = User::query()->pluck('id')->all();
+    $ownerIds = User::query()
+      ->whereIn('role', ['admin', 'host'])
+      ->pluck('id')
+      ->all();
+
     $investorIds = User::query()
       ->whereIn('role', ['investor', 'host'])
       ->pluck('id')
@@ -38,7 +42,9 @@ class PropertySeeder extends Seeder
 
       Property::create([
         'owner_id' => $ownerIds[array_rand($ownerIds)],
-        'investor_id' => count($investorIds) ? fake()->optional(0.7)->randomElement($investorIds) : null,
+        'investor_id' => count($investorIds)
+          ? fake()->optional(0.7)->randomElement($investorIds)
+          : null,
         'type' => $type,
         'name' => $name,
         'address' => fake()->optional(0.9)->address(),

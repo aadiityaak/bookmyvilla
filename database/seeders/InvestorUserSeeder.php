@@ -9,11 +9,19 @@ class InvestorUserSeeder extends Seeder
 {
     public function run(): void
     {
-        User::factory()->create([
-            'name' => 'Investor',
-            'email' => 'investor@example.com',
+        User::query()->updateOrCreate(
+            ['email' => 'investor@example.com'],
+            [
+                'name' => 'Investor',
+                'role' => 'investor',
+                'password' => 'password',
+                'email_verified_at' => now(),
+                'disabled_at' => null,
+            ],
+        );
+
+        User::factory()->count(8)->create([
             'role' => 'investor',
-            'password' => bcrypt('password'),
         ]);
     }
 }

@@ -9,11 +9,19 @@ class TenantUserSeeder extends Seeder
 {
     public function run(): void
     {
-        User::factory()->create([
-            'name' => 'Tenant',
-            'email' => 'tenant@example.com',
+        User::query()->updateOrCreate(
+            ['email' => 'tenant@example.com'],
+            [
+                'name' => 'Tenant',
+                'role' => 'tenant',
+                'password' => 'password',
+                'email_verified_at' => now(),
+                'disabled_at' => null,
+            ],
+        );
+
+        User::factory()->count(20)->create([
             'role' => 'tenant',
-            'password' => bcrypt('password'),
         ]);
     }
 }

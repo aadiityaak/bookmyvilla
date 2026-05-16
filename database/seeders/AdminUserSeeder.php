@@ -9,11 +9,19 @@ class AdminUserSeeder extends Seeder
 {
     public function run(): void
     {
-        User::factory()->create([
-            'name' => 'Admin',
-            'email' => 'admin@example.com',
+        User::query()->updateOrCreate(
+            ['email' => 'admin@example.com'],
+            [
+                'name' => 'Admin',
+                'role' => 'admin',
+                'password' => 'password',
+                'email_verified_at' => now(),
+                'disabled_at' => null,
+            ],
+        );
+
+        User::factory()->count(2)->create([
             'role' => 'admin',
-            'password' => bcrypt('password'),
         ]);
     }
 }
