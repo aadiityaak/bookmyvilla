@@ -35,7 +35,7 @@ import UserMenuContent from '@/components/UserMenuContent.vue';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { getInitials } from '@/composables/useInitials';
 import { toUrl } from '@/lib/utils';
-import { dashboard, login } from '@/routes';
+import { dashboard, login, register } from '@/routes';
 import type { BreadcrumbItem, NavItem } from '@/types';
 
 type Props = {
@@ -49,6 +49,10 @@ const props = withDefaults(defineProps<Props>(), {
 const page = usePage();
 const auth = computed(() => page.props.auth);
 const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
+const canRegister = computed(() => Boolean((page.props as any)?.canRegister));
+
+const isExploreRoute = computed(() => page.url.startsWith('/explore'));
+const isPublicHeader = computed(() => isExploreRoute.value);
 
 const logoHref = computed(() => (auth.value?.user ? dashboard() : '/'));
 
@@ -89,13 +93,42 @@ const rightNavItems: NavItem[] = [
 </script>
 
 <template>
-    <div>
+    <div v-if="isPublicHeader" class="border-b border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)]">
+        <div class="mx-auto flex h-16 w-full max-w-md items-center justify-between px-6">
+            <Link href="/" class="flex items-center gap-2">
+                <AppLogo />
+            </Link>
+
+            <nav class="flex items-center gap-2">
+                <Button variant="ghost" as-child>
+                    <Link href="/explore">Explore</Link>
+                </Button>
+
+                <div class="w-px self-stretch bg-[color:var(--clay-hairline)]" />
+
+                <template v-if="auth.user">
+                    <Button as-child>
+                        <Link :href="dashboard()">Dashboard</Link>
+                    </Button>
+                </template>
+                <template v-else>
+                    <Button variant="ghost" as-child>
+                        <Link :href="login()">Masuk</Link>
+                    </Button>
+                    <Button v-if="canRegister" as-child>
+                        <Link :href="register()">Daftar</Link>
+                    </Button>
+                </template>
+            </nav>
+        </div>
+    </div>
+
+    <div v-else>
         <div class="border-b border-sidebar-border/80">
             <div
                 class="mx-auto flex h-16 items-center px-4"
                 :class="[isMobileOnly ? 'max-w-md' : 'md:max-w-7xl']"
             >
-                <!-- Mobile Menu -->
                 <div :class="[isMobileOnly ? '' : 'lg:hidden']">
                     <Sheet>
                         <SheetTrigger :as-child="true">
@@ -166,7 +199,6 @@ const rightNavItems: NavItem[] = [
                     <AppLogo />
                 </Link>
 
-                <!-- Desktop Menu -->
                 <div v-if="!isMobileOnly" class="hidden h-full lg:flex lg:flex-1">
                     <NavigationMenu class="ml-10 flex h-full items-stretch">
                         <NavigationMenuList

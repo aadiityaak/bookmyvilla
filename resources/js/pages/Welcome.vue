@@ -1,11 +1,14 @@
 <script setup lang="ts">
+import type { InertiaLinkProps } from '@inertiajs/vue3';
 import { Head, Link, usePage } from '@inertiajs/vue3';
+import { Building2, CalendarDays, Home, LogIn, Search, UserPlus, UserRound } from 'lucide-vue-next';
 import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
 import { Button } from '@/components/ui/button';
+import { toUrl } from '@/lib/utils';
 import { dashboard, login, register } from '@/routes';
 
-withDefaults(
+const props = withDefaults(
     defineProps<{
         canRegister: boolean;
     }>(),
@@ -33,12 +36,60 @@ const primaryCtaLabel = computed(() => {
         return 'Kelola Property';
     return 'Dashboard';
 });
+
+type BottomNavItem = {
+    title: string;
+    href: NonNullable<InertiaLinkProps['href']>;
+    icon: any;
+    exact?: boolean;
+};
+
+const showBottomNav = computed(() => true);
+
+const bottomNavItems = computed<BottomNavItem[]>(() => {
+    const items: BottomNavItem[] = [
+        { title: 'Home', href: '/', icon: Home, exact: true },
+        { title: 'Explore', href: '/explore', icon: Search },
+    ];
+
+    if (!user.value) {
+        items.push({ title: 'Masuk', href: login(), icon: LogIn });
+        if (props.canRegister) {
+            items.push({ title: 'Daftar', href: register(), icon: UserPlus });
+        }
+        return items;
+    }
+
+    if (role.value === 'tenant') {
+        items.push({ title: 'Bookings', href: '/bookings', icon: CalendarDays });
+        items.push({ title: 'Akun', href: dashboard(), icon: UserRound });
+        return items;
+    }
+
+    items.push({ title: 'Property', href: '/properties', icon: Building2 });
+    items.push({ title: 'Dashboard', href: dashboard(), icon: UserRound });
+    return items;
+});
+
+const isActive = (item: BottomNavItem) => {
+    const url = page.url;
+    const href = toUrl(item.href);
+    if (item.exact) return url === href;
+    if (href === '/explore') return url.startsWith('/explore');
+    if (href === '/bookings') return url.startsWith('/bookings');
+    return url.startsWith(href);
+};
 </script>
 
 <template>
     <Head title="BookMyVilla" />
 
-    <div class="min-h-screen bg-[color:var(--clay-canvas)] text-[color:var(--clay-ink)]">
+    <div
+        class="min-h-screen bg-[color:var(--clay-canvas)] text-[color:var(--clay-ink)]"
+        :class="[
+            showBottomNav ? 'pb-[calc(5.25rem+env(safe-area-inset-bottom))]' : '',
+        ]"
+    >
         <header class="border-b border-[color:var(--clay-hairline)]">
             <div class="mx-auto flex h-16 w-full max-w-md items-center justify-between px-6">
                 <Link href="/" class="flex items-center gap-2">
@@ -61,7 +112,7 @@ const primaryCtaLabel = computed(() => {
                         <Button variant="ghost" as-child>
                             <Link :href="login()">Masuk</Link>
                         </Button>
-                        <Button v-if="canRegister" as-child>
+                        <Button v-if="props.canRegister" as-child>
                             <Link :href="register()">Daftar</Link>
                         </Button>
                     </template>
@@ -260,7 +311,7 @@ const primaryCtaLabel = computed(() => {
                                 <Button variant="ghost" as-child>
                                     <Link :href="login()">Masuk</Link>
                                 </Button>
-                                <Button v-if="canRegister" variant="ghost" as-child>
+                                <Button v-if="props.canRegister" variant="ghost" as-child>
                                     <Link :href="register()">Daftar</Link>
                                 </Button>
                             </template>
@@ -269,5 +320,36 @@ const primaryCtaLabel = computed(() => {
                 </div>
             </section>
         </main>
+
+        <nav
+            v-if="showBottomNav"
+            class="fixed inset-x-0 bottom-0 z-50 border-t border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)]"
+        >
+            <div class="mx-auto w-full max-w-md px-4 pb-[env(safe-area-inset-bottom)]">
+                <div
+                    class="grid"
+                    :class="[bottomNavItems.length >= 4 ? 'grid-cols-4' : 'grid-cols-3']"
+                >
+                    <Link
+                        v-for="item in bottomNavItems"
+                        :key="item.title"
+                        :href="item.href"
+                        class="flex flex-col items-center justify-center gap-1 py-3 text-xs"
+                        :class="[
+                            isActive(item)
+                                ? 'text-[color:var(--clay-ink)]'
+                                : 'text-[color:var(--clay-muted)]',
+                        ]"
+                    >
+                        <component
+                            :is="item.icon"
+                            class="h-5 w-5"
+                            :class="[isActive(item) ? 'opacity-100' : 'opacity-80']"
+                        />
+                        <span class="leading-none">{{ item.title }}</span>
+                    </Link>
+                </div>
+            </div>
+        </nav>
     </div>
 </template>
