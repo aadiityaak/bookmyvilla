@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Controller;
 use App\Models\Property;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,19 +23,14 @@ class PropertyController extends Controller
             'status' => $request->string('status')->toString(),
         ];
 
-        $query = Property::query()
-            ->with(['owner:id,name,email,role', 'investor:id,name,email,role']);
-
-        if (! $request->user()?->isAdmin()) {
-            $query->where('owner_id', $request->user()->id);
-        }
-
-        $properties = $query
+        $properties = Property::query()
+            ->with(['owner:id,name,email,role', 'investor:id,name,email,role'])
             ->when($filters['q'], function ($q, string $term) {
                 $q->where(function ($sub) use ($term) {
                     $sub
                         ->where('name', 'like', '%' . $term . '%')
                         ->orWhere('address', 'like', '%' . $term . '%')
+                        ->orWhereHas('owner', fn($owner) => $owner->where('name', 'like', '%' . $term . '%'))
                         ->orWhereHas('investor', fn($inv) => $inv->where('name', 'like', '%' . $term . '%'));
                 });
             })
@@ -49,12 +45,6 @@ class PropertyController extends Controller
                 'name' => $property->name,
                 'featured_image' => $property->featured_image,
                 'address' => $property->address,
-                'investor' => $property->investor ? [
-                    'id' => $property->investor->id,
-                    'name' => $property->investor->name,
-                    'email' => $property->investor->email,
-                    'role' => $property->investor->role,
-                ] : null,
                 'status' => $property->status,
                 'owner' => $property->owner ? [
                     'id' => $property->owner->id,
@@ -62,24 +52,26 @@ class PropertyController extends Controller
                     'email' => $property->owner->email,
                     'role' => $property->owner->role,
                 ] : null,
+                'investor' => $property->investor ? [
+                    'id' => $property->investor->id,
+                    'name' => $property->investor->name,
+                    'email' => $property->investor->email,
+                    'role' => $property->investor->role,
+                ] : null,
                 'created_at' => optional($property->created_at)?->toISOString(),
             ]);
 
-        return Inertia::render('guest/properties/Index', [
+        return Inertia::render('admin/properties/Index', [
             'filters' => $filters,
             'properties' => $properties,
             'types' => ['kost', 'villa'],
             'statuses' => ['draft', 'published', 'archived'],
-            'canManage' => $request->user()?->isAdmin() || $request->user()?->isHost(),
-            'canManageAll' => $request->user()?->isAdmin(),
         ]);
     }
 
     public function create(Request $request): Response
     {
-        $owners = $request->user()?->isAdmin()
-            ? \App\Models\User::query()->select(['id', 'name', 'email', 'role'])->orderBy('name')->get()
-            : collect();
+        $owners = \App\Models\User::query()->select(['id', 'name', 'email', 'role'])->orderBy('name')->get();
 
         $investors = \App\Models\User::query()
             ->select(['id', 'name', 'email', 'role'])
@@ -91,10 +83,10 @@ class PropertyController extends Controller
             ? DB::table('reg_provinces')->select(['id', 'name'])->orderBy('name')->get()
             : collect();
 
-        return Inertia::render('guest/properties/Create', [
+        return Inertia::render('admin/properties/Create', [
             'types' => ['kost', 'villa'],
             'statuses' => ['draft', 'published', 'archived'],
-            'canManageAll' => $request->user()?->isAdmin(),
+            'canManageAll' => true,
             'owners' => $owners,
             'investors' => $investors,
             'provinces' => $provinces,
@@ -129,9 +121,9 @@ class PropertyController extends Controller
             'gallery_files.*' => ['nullable', 'file', 'image', 'max:51200'],
         ]);
 
-        $ownerId = $request->user()?->isAdmin()
-            ? ($validated['owner_id'] ?? $request->user()->id)
-            : $request->user()->id;
+        $ownerId = isset($validated['owner_id'])
+            ? (int) $validated['owner_id']
+            : (int) $request->user()->id;
 
         $existingGallery = array_values(array_filter(
             $validated['gallery_existing'] ?? [],
@@ -168,16 +160,12 @@ class PropertyController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Property created.')]);
 
-        return to_route('properties.edit', $property);
+        return to_route('admin.properties.edit', $property);
     }
 
-    public function edit(Request $request, Property $property): Response
+    public function edit(Property $property): Response
     {
-        $this->authorizeAccess($request, $property);
-
-        $owners = $request->user()?->isAdmin()
-            ? \App\Models\User::query()->select(['id', 'name', 'email', 'role'])->orderBy('name')->get()
-            : collect();
+        $owners = \App\Models\User::query()->select(['id', 'name', 'email', 'role'])->orderBy('name')->get();
 
         $investors = \App\Models\User::query()
             ->select(['id', 'name', 'email', 'role'])
@@ -198,7 +186,7 @@ class PropertyController extends Controller
                 ->get();
         }
 
-        return Inertia::render('guest/properties/Edit', [
+        return Inertia::render('admin/properties/Edit', [
             'property' => [
                 'id' => $property->id,
                 'owner_id' => $property->owner_id,
@@ -219,7 +207,7 @@ class PropertyController extends Controller
             ],
             'types' => ['kost', 'villa'],
             'statuses' => ['draft', 'published', 'archived'],
-            'canManageAll' => $request->user()?->isAdmin(),
+            'canManageAll' => true,
             'owners' => $owners,
             'investors' => $investors,
             'provinces' => $provinces,
@@ -229,8 +217,6 @@ class PropertyController extends Controller
 
     public function update(Request $request, Property $property): RedirectResponse
     {
-        $this->authorizeAccess($request, $property);
-
         $validated = $request->validate([
             'owner_id' => ['nullable', 'integer', Rule::exists('users', 'id')],
             'investor_id' => [
@@ -257,8 +243,8 @@ class PropertyController extends Controller
             'gallery_files.*' => ['nullable', 'file', 'image', 'max:51200'],
         ]);
 
-        if ($request->user()?->isAdmin() && isset($validated['owner_id'])) {
-            $property->owner_id = $validated['owner_id'];
+        if (isset($validated['owner_id'])) {
+            $property->owner_id = (int) $validated['owner_id'];
         }
 
         $existingGallery = array_values(array_filter(
@@ -305,27 +291,16 @@ class PropertyController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Property updated.')]);
 
-        return to_route('properties.edit', $property);
+        return to_route('admin.properties.edit', $property);
     }
 
-    public function destroy(Request $request, Property $property): RedirectResponse
+    public function destroy(Property $property): RedirectResponse
     {
-        $this->authorizeAccess($request, $property);
-
         $property->delete();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Property deleted.')]);
 
-        return to_route('properties.index');
-    }
-
-    private function authorizeAccess(Request $request, Property $property): void
-    {
-        if ($request->user()?->isAdmin()) {
-            return;
-        }
-
-        abort_unless($request->user() && $property->owner_id === $request->user()->id, 403);
+        return to_route('admin.properties.index');
     }
 
     private function sanitizeRichText(?string $html): ?string
@@ -358,3 +333,4 @@ class PropertyController extends Controller
         Storage::disk('public')->delete($path);
     }
 }
+

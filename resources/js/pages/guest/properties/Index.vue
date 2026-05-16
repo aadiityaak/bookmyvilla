@@ -148,6 +148,7 @@ const imageUrl = (path: string | null) => {
                 </div>
 
                 <Button class="w-full" @click="applyFilters">Terapkan Filter</Button>
+            </div>
 
             <div v-if="hasFilters" class="mt-2 flex items-center justify-end gap-2">
                 <Button variant="outline" @click="clearFilters">Reset</Button>

@@ -23,12 +23,12 @@ defineOptions({
     layout: {
         breadcrumbs: [
             {
-                title: 'Property',
-                href: '/properties',
+                title: 'Properties',
+                href: '/admin/properties',
             },
             {
                 title: 'Create',
-                href: '/properties/create',
+                href: '/admin/properties/create',
             },
         ],
     },
@@ -329,7 +329,7 @@ watch(
 );
 
 const submit = () => {
-    form.post('/properties', {
+    form.post('/admin/properties', {
         preserveScroll: true,
         forceFormData: true,
     });
@@ -340,17 +340,15 @@ const submit = () => {
     <Head title="Create property" />
 
     <div class="mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 py-8">
-        <div
-            class="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center"
-        >
+        <div class="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
             <Heading
                 variant="small"
                 title="Create property"
-                description="Add a new kost or villa"
+                description="Add a new kost or villa (admin)"
             />
 
             <Button variant="outline" as-child>
-                <Link href="/properties">Back</Link>
+                <Link href="/admin/properties">Back</Link>
             </Button>
         </div>
 
@@ -557,9 +555,7 @@ const submit = () => {
                             </div>
                         </div>
 
-                        <div
-                            class="overflow-hidden rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)]"
-                        >
+                        <div class="overflow-hidden rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)]">
                             <div ref="mapEl" class="h-72 w-full" />
                         </div>
 
@@ -719,7 +715,7 @@ const submit = () => {
                     <div class="flex items-center justify-end gap-2">
                         <Button :disabled="form.processing">Create</Button>
                         <Button variant="outline" as-child>
-                            <Link href="/properties">Cancel</Link>
+                            <Link href="/admin/properties">Cancel</Link>
                         </Button>
                     </div>
                 </div>
@@ -727,3 +723,4 @@ const submit = () => {
         </div>
     </div>
 </template>
+

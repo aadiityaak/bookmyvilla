@@ -18,6 +18,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'address',
     'province_id',
     'regency_id',
+    'latitude',
+    'longitude',
     'description',
     'status',
     'gallery',
@@ -46,6 +48,8 @@ class Property extends Model
     {
         return [
             'gallery' => 'array',
+            'latitude' => 'float',
+            'longitude' => 'float',
         ];
     }
 }

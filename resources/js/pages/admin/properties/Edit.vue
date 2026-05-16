@@ -43,12 +43,12 @@ defineOptions({
     layout: {
         breadcrumbs: [
             {
-                title: 'Property',
-                href: '/properties',
+                title: 'Properties',
+                href: '/admin/properties',
             },
             {
                 title: 'Edit',
-                href: '/properties',
+                href: '/admin/properties',
             },
         ],
     },
@@ -369,7 +369,7 @@ const submit = () => {
     form.transform((data) => ({
         ...data,
         _method: 'patch',
-    })).post(`/properties/${props.property.id}`, {
+    })).post(`/admin/properties/${props.property.id}`, {
         preserveScroll: true,
         forceFormData: true,
     });
@@ -377,7 +377,7 @@ const submit = () => {
 
 const destroy = () => {
     if (!confirm('Delete this property?')) return;
-    form.delete(`/properties/${props.property.id}`, {
+    form.delete(`/admin/properties/${props.property.id}`, {
         preserveScroll: true,
     });
 };
@@ -393,12 +393,12 @@ const destroy = () => {
             <Heading
                 variant="small"
                 title="Edit property"
-                description="Update property information"
+                description="Update property information (admin)"
             />
 
             <div class="flex items-center gap-2">
                 <Button variant="outline" as-child>
-                    <Link href="/properties">Back</Link>
+                    <Link href="/admin/properties">Back</Link>
                 </Button>
                 <Button variant="destructive" @click="destroy" :disabled="form.processing">
                     Delete
@@ -835,7 +835,7 @@ const destroy = () => {
                         <div class="flex items-center justify-end gap-2">
                             <Button :disabled="form.processing">Save</Button>
                             <Button variant="outline" as-child>
-                                <Link href="/properties">Cancel</Link>
+                                <Link href="/admin/properties">Cancel</Link>
                             </Button>
                         </div>
                     </div>
@@ -844,3 +844,4 @@ const destroy = () => {
         </div>
     </div>
 </template>
+

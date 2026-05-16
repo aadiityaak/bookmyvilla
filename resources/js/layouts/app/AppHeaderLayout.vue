@@ -36,7 +36,9 @@ const bottomNavItems = computed<BottomNavItem[]>(() => {
         ? '/login'
         : role.value === 'tenant'
             ? '/my-property'
-            : '/properties';
+            : role.value === 'admin'
+                ? '/admin/properties'
+                : '/properties';
 
     const accountHref = !user.value ? '/login' : '/profile';
 
@@ -56,6 +58,7 @@ const isActive = (item: BottomNavItem) => {
     if (href === '/bookings') return url.startsWith('/bookings');
     if (href === '/my-property') return url.startsWith('/my-property') || url.startsWith('/bookings');
     if (href === '/properties') return url.startsWith('/properties');
+    if (href === '/admin/properties') return url.startsWith('/admin/properties');
     if (href === '/profile') return url.startsWith('/profile');
     return url.startsWith(href);
 };

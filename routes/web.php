@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
 use App\Models\Property;
+use App\Http\Controllers\Admin\PropertyController as AdminPropertyController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\ExploreController;
@@ -92,11 +93,11 @@ Route::middleware(['auth', 'role:tenant'])->group(function () {
     Route::get('my-property', [BookingController::class, 'index'])->name('my-property');
 });
 
-Route::middleware(['auth', 'role:host,admin,investor'])->group(function () {
+Route::middleware(['auth', 'role:host,investor'])->group(function () {
     Route::get('properties', [PropertyController::class, 'index'])->name('properties.index');
 });
 
-Route::middleware(['auth', 'role:host,admin'])->group(function () {
+Route::middleware(['auth', 'role:host'])->group(function () {
     Route::get('properties/create', [PropertyController::class, 'create'])->name('properties.create');
     Route::post('properties', [PropertyController::class, 'store'])->name('properties.store');
     Route::get('properties/{property}/edit', [PropertyController::class, 'edit'])->name('properties.edit');
@@ -105,6 +106,13 @@ Route::middleware(['auth', 'role:host,admin'])->group(function () {
 });
 
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('properties', [AdminPropertyController::class, 'index'])->name('properties.index');
+    Route::get('properties/create', [AdminPropertyController::class, 'create'])->name('properties.create');
+    Route::post('properties', [AdminPropertyController::class, 'store'])->name('properties.store');
+    Route::get('properties/{property}/edit', [AdminPropertyController::class, 'edit'])->name('properties.edit');
+    Route::patch('properties/{property}', [AdminPropertyController::class, 'update'])->name('properties.update');
+    Route::delete('properties/{property}', [AdminPropertyController::class, 'destroy'])->name('properties.destroy');
+
     Route::redirect('settings', '/admin/settings/branding');
     Route::get('settings/branding', [\App\Http\Controllers\Admin\SettingsController::class, 'brandingEdit'])->name('settings.branding');
     Route::patch('settings/branding', [\App\Http\Controllers\Admin\SettingsController::class, 'brandingUpdate'])->name('settings.branding.update');

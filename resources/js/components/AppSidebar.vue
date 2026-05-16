@@ -34,7 +34,7 @@ const mainNavItems = computed<NavItem[]>(() => {
             : [
                   {
                       title: 'Property',
-                      href: '/properties',
+                      href: userRole.value === 'admin' ? '/admin/properties' : '/properties',
                       icon: Building2,
                   },
               ]),
