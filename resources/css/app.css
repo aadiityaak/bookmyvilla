@@ -2,6 +2,8 @@
 
 @import 'tw-animate-css';
 
+@import '@vueup/vue-quill/dist/vue-quill.snow.css';
+
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
@@ -98,6 +100,23 @@
 
     .clay-textarea {
         @apply border-input bg-background text-foreground shadow-xs focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 text-sm outline-none transition-[color,box-shadow] focus-visible:ring-[3px] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50;
+    }
+
+    .clay-wysiwyg {
+        @apply overflow-hidden rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)];
+    }
+
+    .clay-wysiwyg .ql-toolbar {
+        @apply border-0 border-b border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-card)];
+    }
+
+    .clay-wysiwyg .ql-container {
+        @apply border-0;
+    }
+
+    .clay-wysiwyg .ql-editor {
+        @apply text-sm text-[color:var(--clay-body)];
+        min-height: 10rem;
     }
 }
 

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { QuillEditor } from '@vueup/vue-quill';
 
 type PropertyData = {
     id: number;
@@ -46,6 +47,7 @@ defineOptions({
     },
 });
 
+const isClient = ref(false);
 const ownerQuery = ref('');
 const investorQuery = ref('');
 
@@ -135,6 +137,10 @@ const removeGalleryFile = (index: number) => {
     form.gallery_files.splice(index, 1);
 };
 
+onMounted(() => {
+    isClient.value = true;
+});
+
 onBeforeUnmount(() => {
     for (const item of galleryPreviews.value) {
         URL.revokeObjectURL(item.url);
@@ -142,35 +148,14 @@ onBeforeUnmount(() => {
 });
 
 const submit = () => {
-    form.patch(`/properties/${props.property.id}`, {
+    form.transform((data) => ({
+        ...data,
+        _method: 'patch',
+    })).post(`/properties/${props.property.id}`, {
         preserveScroll: true,
         forceFormData: true,
     });
 };
-
-const descriptionEditorRef = ref<HTMLDivElement | null>(null);
-
-const syncDescriptionFromEditor = () => {
-    if (!descriptionEditorRef.value) return;
-    form.description = descriptionEditorRef.value.innerHTML;
-};
-
-const applyDescriptionCommand = (command: string, value?: string) => {
-    descriptionEditorRef.value?.focus();
-    document.execCommand(command, false, value);
-    syncDescriptionFromEditor();
-};
-
-const addDescriptionLink = () => {
-    const url = window.prompt('Link URL');
-    if (!url) return;
-    applyDescriptionCommand('createLink', url);
-};
-
-onMounted(() => {
-    if (!descriptionEditorRef.value) return;
-    descriptionEditorRef.value.innerHTML = form.description || '';
-});
 
 const destroy = () => {
     if (!confirm('Delete this property?')) return;
@@ -249,7 +234,10 @@ const destroy = () => {
                                 <SelectTrigger class="clay-select w-full">
                                     <SelectValue placeholder="Select user" />
                                 </SelectTrigger>
-                                <SelectContent class="w-(--reka-select-trigger-width)">
+                                <SelectContent
+                                    v-if="isClient"
+                                    class="w-(--reka-select-trigger-width)"
+                                >
                                     <div class="p-2">
                                         <Input
                                             v-model="ownerQuery"
@@ -317,7 +305,10 @@ const destroy = () => {
                                 <SelectTrigger class="clay-select w-full">
                                     <SelectValue placeholder="-" />
                                 </SelectTrigger>
-                                <SelectContent class="w-(--reka-select-trigger-width)">
+                                <SelectContent
+                                    v-if="isClient"
+                                    class="w-(--reka-select-trigger-width)"
+                                >
                                     <div class="p-2">
                                         <Input
                                             v-model="investorQuery"
@@ -362,72 +353,25 @@ const destroy = () => {
 
                         <div class="grid gap-2">
                             <Label for="description">Description</Label>
-                            <div class="flex flex-wrap items-center gap-2">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    @click="applyDescriptionCommand('bold')"
-                                >
-                                    Bold
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    @click="applyDescriptionCommand('italic')"
-                                >
-                                    Italic
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    @click="applyDescriptionCommand('underline')"
-                                >
-                                    Underline
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    @click="applyDescriptionCommand('insertUnorderedList')"
-                                >
-                                    Bullets
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    @click="applyDescriptionCommand('insertOrderedList')"
-                                >
-                                    Numbered
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    @click="addDescriptionLink"
-                                >
-                                    Link
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    @click="applyDescriptionCommand('removeFormat')"
-                                >
-                                    Clear
-                                </Button>
+                            <div v-if="isClient">
+                                <QuillEditor
+                                    v-model:content="form.description"
+                                    content-type="html"
+                                    theme="snow"
+                                    class="clay-wysiwyg"
+                                    :toolbar="[
+                                        ['bold', 'italic', 'underline'],
+                                        [{ list: 'ordered' }, { list: 'bullet' }],
+                                        ['link'],
+                                        ['clean'],
+                                    ]"
+                                />
                             </div>
-                            <div
-                                id="description"
-                                ref="descriptionEditorRef"
-                                class="clay-textarea min-h-32"
-                                contenteditable="true"
-                                @input="syncDescriptionFromEditor"
-                                @blur="syncDescriptionFromEditor"
-                            />
+                            <div v-else class="clay-wysiwyg">
+                                <div class="min-h-32 px-3 py-2 text-sm text-muted-foreground">
+                                    Loading editor…
+                                </div>
+                            </div>
                             <InputError :message="form.errors.description" />
                         </div>
 
