@@ -117,9 +117,9 @@ typography:
 rounded:
     xs: 6px
     sm: 8px
-    md: 12px
-    lg: 16px
-    xl: 24px
+    md: 10px
+    lg: 12px
+    xl: 16px
     pill: 9999px
     full: 9999px
 
@@ -225,25 +225,25 @@ components:
         backgroundColor: '{colors.canvas}'
         textColor: '{colors.ink}'
         typography: '{typography.title-md}'
-        rounded: '{rounded.md}'
+        rounded: '{rounded.lg}'
         padding: 24px
     testimonial-card:
         backgroundColor: '{colors.surface-card}'
         textColor: '{colors.ink}'
         typography: '{typography.body-md}'
-        rounded: '{rounded.md}'
+        rounded: '{rounded.lg}'
         padding: 24px
     pricing-tier-card:
         backgroundColor: '{colors.canvas}'
         textColor: '{colors.ink}'
         typography: '{typography.title-lg}'
-        rounded: '{rounded.md}'
+        rounded: '{rounded.lg}'
         padding: 32px
     pricing-tier-card-featured:
         backgroundColor: '{colors.brand-teal}'
         textColor: '{colors.on-dark}'
         typography: '{typography.title-lg}'
-        rounded: '{rounded.md}'
+        rounded: '{rounded.lg}'
         padding: 32px
     text-input:
         backgroundColor: '{colors.canvas}'
@@ -277,7 +277,7 @@ components:
         backgroundColor: '{colors.canvas}'
         textColor: '{colors.ink}'
         typography: '{typography.title-md}'
-        rounded: '{rounded.md}'
+        rounded: '{rounded.lg}'
         padding: 24px
     cta-band-illustrated:
         backgroundColor: '{colors.surface-soft}'
@@ -303,14 +303,21 @@ Component voltage comes from **saturated single-color feature cards** in a 6-col
 **Key Characteristics:**
 
 - Cream-tinted white canvas (`{colors.canvas}` — #fffaf0). The warmth differentiates Clay from cool-gray competitor sites.
-- Dark navy/black primary CTAs (`{colors.primary}` — #0a0a0a). Buttons rounded `{rounded.md}` (12px) — friendly modern but not pill.
+- Dark navy/black primary CTAs (`{colors.primary}` — #0a0a0a). Buttons rounded `{rounded.md}` (10px) — friendly modern but not pill.
 - 6-color saturated feature card palette: `{colors.brand-pink}`, `{colors.brand-teal}`, `{colors.brand-lavender}`, `{colors.brand-peach}`, `{colors.brand-ochre}`, `{colors.surface-card}` (cream).
 - 3D claymation illustrations (mountains, characters, abstract shapes) as full-bleed hero artifacts — the brand's most-recognized visual element.
 - Custom rounded Plain Black display typeface at 500 weight with -1 to -2.5px letter-spacing on display sizes.
-- Border radius is moderate: `{rounded.md}` (12px) for buttons + inputs + most cards, `{rounded.lg}` (16px) for feature cards. The smaller radius keeps the layout crisp while still matching the rounded display type's character.
+- Border radius is tight and consistent: inputs/buttons use `{rounded.md}` (10px), most cards/panels/tables use `{rounded.lg}` (12px). Avoid oversized rounding on admin surfaces.
 - Product UI fragments embedded inside colored cards at small scale — agent run logs, sequencer flows, enrichment results.
 - Section rhythm `{spacing.section}` (96px) between major bands.
 - Footer is cream-tinted (`{colors.surface-soft}`) — Clay does NOT use a dark footer. Even the closing band stays warm-light.
+
+### App UI Conventions
+
+- Page container: `mx-auto w-full max-w-7xl px-6 py-8`
+- Filter panel: `rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-card)] p-4`
+- Data table shell: `overflow-hidden rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)]`
+- Forms: inputs/select/textarea use `clay-control`, `clay-select`, `clay-textarea`; "Clear" filter button only appears when `hasFilters` is true
 
 ## Colors
 

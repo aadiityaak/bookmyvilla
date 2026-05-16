@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { Head, Link, useForm } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
@@ -10,12 +10,13 @@ import { Label } from '@/components/ui/label';
 type PropertyData = {
     id: number;
     owner_id: number;
+    investor_id: number | null;
     type: string;
     name: string;
     address: string | null;
     description: string | null;
-    investor_name: string | null;
     status: string;
+    gallery: string[];
     created_at: string | null;
     updated_at: string | null;
 };
@@ -25,6 +26,8 @@ const props = defineProps<{
     types: string[];
     statuses: string[];
     canManageAll: boolean;
+    owners: { id: number; name: string; email: string; role: string }[];
+    investors: { id: number; name: string; email: string; role: string }[];
 }>();
 
 defineOptions({
@@ -42,19 +45,51 @@ defineOptions({
     },
 });
 
-const page = usePage();
-const role = computed(() => (page.props.auth?.user as any)?.role);
-const isAdmin = computed(() => role.value === 'admin');
+const ownerSearch = ref('');
+const investorSearch = ref('');
+
+const filteredOwners = computed(() => {
+    const q = ownerSearch.value.trim().toLowerCase();
+    if (!q) return props.owners;
+    return props.owners.filter((u) => {
+        return (
+            u.name.toLowerCase().includes(q) ||
+            u.email.toLowerCase().includes(q) ||
+            u.role.toLowerCase().includes(q)
+        );
+    });
+});
+
+const filteredInvestors = computed(() => {
+    const q = investorSearch.value.trim().toLowerCase();
+    if (!q) return props.investors;
+    return props.investors.filter((u) => {
+        return (
+            u.name.toLowerCase().includes(q) ||
+            u.email.toLowerCase().includes(q) ||
+            u.role.toLowerCase().includes(q)
+        );
+    });
+});
 
 const form = useForm({
     owner_id: props.property.owner_id,
+    investor_id: props.property.investor_id,
     type: props.property.type,
     name: props.property.name,
     address: props.property.address ?? '',
     description: props.property.description ?? '',
-    investor_name: props.property.investor_name ?? '',
     status: props.property.status,
+    gallery: (props.property.gallery ?? []) as string[],
 });
+
+const addGalleryItem = () => {
+    form.gallery.push('');
+};
+
+const removeGalleryItem = (index: number) => {
+    form.gallery.splice(index, 1);
+};
 
 const submit = () => {
     form.patch(`/properties/${props.property.id}`, {
@@ -133,15 +168,27 @@ const destroy = () => {
                     @submit.prevent="submit"
                 >
                     <div class="grid gap-6">
-                        <div v-if="isAdmin" class="grid gap-2">
-                            <Label for="owner_id">Owner user ID</Label>
+                        <div v-if="canManageAll" class="grid gap-2">
+                            <Label for="owner_id">User</Label>
                             <Input
+                                id="owner_search"
+                                v-model="ownerSearch"
+                                class="clay-control"
+                                placeholder="Search user by name/email/role"
+                            />
+                            <select
                                 id="owner_id"
                                 v-model="form.owner_id"
-                                class="clay-control"
-                                type="number"
-                                inputmode="numeric"
-                            />
+                                class="clay-select"
+                            >
+                                <option
+                                    v-for="u in filteredOwners"
+                                    :key="u.id"
+                                    :value="u.id"
+                                >
+                                    {{ u.name }} ({{ u.email }}) — {{ u.role }}
+                                </option>
+                            </select>
                             <InputError :message="form.errors.owner_id" />
                         </div>
 
@@ -180,13 +227,28 @@ const destroy = () => {
                         </div>
 
                         <div class="grid gap-2">
-                            <Label for="investor_name">Investor</Label>
+                            <Label for="investor_id">Investor</Label>
                             <Input
-                                id="investor_name"
-                                v-model="form.investor_name"
+                                id="investor_search"
+                                v-model="investorSearch"
                                 class="clay-control"
+                                placeholder="Search investor/host by name/email"
                             />
-                            <InputError :message="form.errors.investor_name" />
+                            <select
+                                id="investor_id"
+                                v-model="form.investor_id"
+                                class="clay-select"
+                            >
+                                <option :value="null">-</option>
+                                <option
+                                    v-for="u in filteredInvestors"
+                                    :key="u.id"
+                                    :value="u.id"
+                                >
+                                    {{ u.name }} ({{ u.email }}) — {{ u.role }}
+                                </option>
+                            </select>
+                            <InputError :message="form.errors.investor_id" />
                         </div>
 
                         <div class="grid gap-2">
@@ -211,6 +273,42 @@ const destroy = () => {
                                 class="clay-textarea"
                             />
                             <InputError :message="form.errors.description" />
+                        </div>
+
+                        <div class="grid gap-2">
+                            <div class="flex items-center justify-between gap-3">
+                                <Label>Gallery</Label>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    @click="addGalleryItem"
+                                >
+                                    Add
+                                </Button>
+                            </div>
+
+                            <div v-if="form.gallery.length" class="grid gap-2">
+                                <div
+                                    v-for="(item, index) in form.gallery"
+                                    :key="index"
+                                    class="flex items-center gap-2"
+                                >
+                                    <Input
+                                        :id="`gallery_${index}`"
+                                        v-model="form.gallery[index]"
+                                        class="clay-control"
+                                        placeholder="Image URL or path"
+                                    />
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        @click="removeGalleryItem(index)"
+                                    >
+                                        Remove
+                                    </Button>
+                                </div>
+                            </div>
+                            <InputError :message="form.errors.gallery" />
                         </div>
 
                         <div class="flex items-center justify-end gap-2">

@@ -11,16 +11,18 @@ return new class extends Migration
         Schema::create('properties', function (Blueprint $table) {
             $table->id();
             $table->foreignId('owner_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('investor_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('type');
             $table->string('name');
             $table->string('address')->nullable();
             $table->text('description')->nullable();
-            $table->string('investor_name')->nullable();
             $table->string('status')->default('draft');
+            $table->json('gallery')->nullable();
             $table->timestamps();
 
             $table->index(['type', 'status']);
             $table->index('owner_id');
+            $table->index('investor_id');
         });
     }
 
@@ -29,4 +31,3 @@ return new class extends Migration
         Schema::dropIfExists('properties');
     }
 };
-

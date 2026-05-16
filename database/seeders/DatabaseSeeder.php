@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
             HostUserSeeder::class,
             InvestorUserSeeder::class,
             TenantUserSeeder::class,
+            PropertySeeder::class,
         ]);
     }
 }

@@ -20,7 +20,7 @@ class PropertyController extends Controller
         ];
 
         $query = Property::query()
-            ->with('owner:id,name,email,role');
+            ->with(['owner:id,name,email,role', 'investor:id,name,email,role']);
 
         if (! $request->user()?->isAdmin()) {
             $query->where('owner_id', $request->user()->id);
@@ -32,7 +32,7 @@ class PropertyController extends Controller
                     $sub
                         ->where('name', 'like', '%'.$term.'%')
                         ->orWhere('address', 'like', '%'.$term.'%')
-                        ->orWhere('investor_name', 'like', '%'.$term.'%');
+                        ->orWhereHas('investor', fn ($inv) => $inv->where('name', 'like', '%'.$term.'%'));
                 });
             })
             ->when($filters['type'], fn ($q, string $type) => $q->where('type', $type))
@@ -45,7 +45,12 @@ class PropertyController extends Controller
                 'type' => $property->type,
                 'name' => $property->name,
                 'address' => $property->address,
-                'investor_name' => $property->investor_name,
+                'investor' => $property->investor ? [
+                    'id' => $property->investor->id,
+                    'name' => $property->investor->name,
+                    'email' => $property->investor->email,
+                    'role' => $property->investor->role,
+                ] : null,
                 'status' => $property->status,
                 'owner' => $property->owner ? [
                     'id' => $property->owner->id,
@@ -68,10 +73,22 @@ class PropertyController extends Controller
 
     public function create(Request $request): Response
     {
+        $owners = $request->user()?->isAdmin()
+            ? \App\Models\User::query()->select(['id', 'name', 'email', 'role'])->orderBy('name')->get()
+            : collect();
+
+        $investors = \App\Models\User::query()
+            ->select(['id', 'name', 'email', 'role'])
+            ->whereIn('role', ['investor', 'host'])
+            ->orderBy('name')
+            ->get();
+
         return Inertia::render('properties/Create', [
             'types' => ['kost', 'villa'],
             'statuses' => ['draft', 'published', 'archived'],
             'canManageAll' => $request->user()?->isAdmin(),
+            'owners' => $owners,
+            'investors' => $investors,
         ]);
     }
 
@@ -79,12 +96,20 @@ class PropertyController extends Controller
     {
         $validated = $request->validate([
             'owner_id' => ['nullable', 'integer', Rule::exists('users', 'id')],
+            'investor_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('users', 'id')->where(
+                    fn ($q) => $q->whereIn('role', ['investor', 'host']),
+                ),
+            ],
             'type' => ['required', 'string', Rule::in(['kost', 'villa'])],
             'name' => ['required', 'string', 'max:255'],
             'address' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'investor_name' => ['nullable', 'string', 'max:255'],
             'status' => ['required', 'string', Rule::in(['draft', 'published', 'archived'])],
+            'gallery' => ['nullable', 'array'],
+            'gallery.*' => ['nullable', 'string', 'max:2048'],
         ]);
 
         $ownerId = $request->user()?->isAdmin()
@@ -94,6 +119,9 @@ class PropertyController extends Controller
         $property = Property::create([
             ...$validated,
             'owner_id' => $ownerId,
+            'gallery' => isset($validated['gallery'])
+                ? array_values(array_filter($validated['gallery'], fn ($item) => is_string($item) && trim($item) !== ''))
+                : null,
         ]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Property created.')]);
@@ -105,22 +133,35 @@ class PropertyController extends Controller
     {
         $this->authorizeAccess($request, $property);
 
+        $owners = $request->user()?->isAdmin()
+            ? \App\Models\User::query()->select(['id', 'name', 'email', 'role'])->orderBy('name')->get()
+            : collect();
+
+        $investors = \App\Models\User::query()
+            ->select(['id', 'name', 'email', 'role'])
+            ->whereIn('role', ['investor', 'host'])
+            ->orderBy('name')
+            ->get();
+
         return Inertia::render('properties/Edit', [
             'property' => [
                 'id' => $property->id,
                 'owner_id' => $property->owner_id,
+                'investor_id' => $property->investor_id,
                 'type' => $property->type,
                 'name' => $property->name,
                 'address' => $property->address,
                 'description' => $property->description,
-                'investor_name' => $property->investor_name,
                 'status' => $property->status,
+                'gallery' => $property->gallery ?? [],
                 'created_at' => optional($property->created_at)?->toISOString(),
                 'updated_at' => optional($property->updated_at)?->toISOString(),
             ],
             'types' => ['kost', 'villa'],
             'statuses' => ['draft', 'published', 'archived'],
             'canManageAll' => $request->user()?->isAdmin(),
+            'owners' => $owners,
+            'investors' => $investors,
         ]);
     }
 
@@ -130,12 +171,20 @@ class PropertyController extends Controller
 
         $validated = $request->validate([
             'owner_id' => ['nullable', 'integer', Rule::exists('users', 'id')],
+            'investor_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('users', 'id')->where(
+                    fn ($q) => $q->whereIn('role', ['investor', 'host']),
+                ),
+            ],
             'type' => ['required', 'string', Rule::in(['kost', 'villa'])],
             'name' => ['required', 'string', 'max:255'],
             'address' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'investor_name' => ['nullable', 'string', 'max:255'],
             'status' => ['required', 'string', Rule::in(['draft', 'published', 'archived'])],
+            'gallery' => ['nullable', 'array'],
+            'gallery.*' => ['nullable', 'string', 'max:2048'],
         ]);
 
         if ($request->user()?->isAdmin() && isset($validated['owner_id'])) {
@@ -143,12 +192,15 @@ class PropertyController extends Controller
         }
 
         $property->fill([
+            'investor_id' => $validated['investor_id'] ?? null,
             'type' => $validated['type'],
             'name' => $validated['name'],
             'address' => $validated['address'] ?? null,
             'description' => $validated['description'] ?? null,
-            'investor_name' => $validated['investor_name'] ?? null,
             'status' => $validated['status'],
+            'gallery' => isset($validated['gallery'])
+                ? array_values(array_filter($validated['gallery'], fn ($item) => is_string($item) && trim($item) !== ''))
+                : [],
         ]);
 
         $property->save();
@@ -178,4 +230,3 @@ class PropertyController extends Controller
         abort_unless($request->user() && $property->owner_id === $request->user()->id, 403);
     }
 }
-

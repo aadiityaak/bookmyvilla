@@ -11,7 +11,7 @@ type PropertyRow = {
     type: string;
     name: string;
     address: string | null;
-    investor_name: string | null;
+    investor: { id: number; name: string; email: string; role: string } | null;
     status: string;
     owner: { id: number; name: string; email: string; role: string } | null;
     created_at: string | null;
@@ -172,7 +172,11 @@ const clearFilters = () => {
                     {{ property.type }}
                 </div>
                 <div class="col-span-3 truncate text-[color:var(--clay-body)]">
-                    {{ property.investor_name ?? '-' }}
+                    {{
+                        property.investor
+                            ? `${property.investor.name} — ${property.investor.role}`
+                            : '-'
+                    }}
                 </div>
                 <div class="col-span-2 text-[color:var(--clay-body)]">
                     {{ property.status }}
