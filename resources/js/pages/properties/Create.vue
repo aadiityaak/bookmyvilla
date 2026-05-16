@@ -51,8 +51,10 @@ const submit = () => {
 <template>
     <Head title="Create property" />
 
-    <div class="flex flex-col gap-6 p-4">
-        <div class="flex items-start justify-between gap-4">
+    <div class="mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 py-8">
+        <div
+            class="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center"
+        >
             <Heading
                 variant="small"
                 title="Create property"
@@ -64,79 +66,92 @@ const submit = () => {
             </Button>
         </div>
 
-        <form class="space-y-6" @submit.prevent="submit">
-            <div class="grid gap-2">
-                <Label for="type">Type</Label>
-                <select
-                    id="type"
-                    v-model="form.type"
-                    class="h-9 w-full rounded-md border bg-background px-3 text-sm"
-                >
-                    <option v-for="t in types" :key="t" :value="t">
-                        {{ t }}
-                    </option>
-                </select>
-                <InputError :message="form.errors.type" />
-            </div>
+        <div class="grid gap-6 md:grid-cols-12">
+            <form
+                class="rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)] p-6 md:col-span-8 md:col-start-3"
+                @submit.prevent="submit"
+            >
+                <div class="grid gap-6">
+                    <div class="grid gap-2">
+                        <Label for="type">Type</Label>
+                        <select
+                            id="type"
+                            v-model="form.type"
+                            class="clay-select"
+                        >
+                            <option v-for="t in types" :key="t" :value="t">
+                                {{ t }}
+                            </option>
+                        </select>
+                        <InputError :message="form.errors.type" />
+                    </div>
 
-            <div class="grid gap-2">
-                <Label for="name">Name</Label>
-                <Input id="name" v-model="form.name" placeholder="Property name" />
-                <InputError :message="form.errors.name" />
-            </div>
+                    <div class="grid gap-2">
+                        <Label for="name">Name</Label>
+                        <Input
+                            id="name"
+                            v-model="form.name"
+                            class="clay-control"
+                            placeholder="Property name"
+                        />
+                        <InputError :message="form.errors.name" />
+                    </div>
 
-            <div class="grid gap-2">
-                <Label for="address">Address</Label>
-                <Input
-                    id="address"
-                    v-model="form.address"
-                    placeholder="Address (optional)"
-                />
-                <InputError :message="form.errors.address" />
-            </div>
+                    <div class="grid gap-2">
+                        <Label for="address">Address</Label>
+                        <Input
+                            id="address"
+                            v-model="form.address"
+                            class="clay-control"
+                            placeholder="Address (optional)"
+                        />
+                        <InputError :message="form.errors.address" />
+                    </div>
 
-            <div class="grid gap-2">
-                <Label for="investor_name">Investor</Label>
-                <Input
-                    id="investor_name"
-                    v-model="form.investor_name"
-                    placeholder="Investor name (optional)"
-                />
-                <InputError :message="form.errors.investor_name" />
-            </div>
+                    <div class="grid gap-2">
+                        <Label for="investor_name">Investor</Label>
+                        <Input
+                            id="investor_name"
+                            v-model="form.investor_name"
+                            class="clay-control"
+                            placeholder="Investor name (optional)"
+                        />
+                        <InputError :message="form.errors.investor_name" />
+                    </div>
 
-            <div class="grid gap-2">
-                <Label for="status">Status</Label>
-                <select
-                    id="status"
-                    v-model="form.status"
-                    class="h-9 w-full rounded-md border bg-background px-3 text-sm"
-                >
-                    <option v-for="s in statuses" :key="s" :value="s">
-                        {{ s }}
-                    </option>
-                </select>
-                <InputError :message="form.errors.status" />
-            </div>
+                    <div class="grid gap-2">
+                        <Label for="status">Status</Label>
+                        <select
+                            id="status"
+                            v-model="form.status"
+                            class="clay-select"
+                        >
+                            <option v-for="s in statuses" :key="s" :value="s">
+                                {{ s }}
+                            </option>
+                        </select>
+                        <InputError :message="form.errors.status" />
+                    </div>
 
-            <div class="grid gap-2">
-                <Label for="description">Description</Label>
-                <textarea
-                    id="description"
-                    v-model="form.description"
-                    class="min-h-28 w-full rounded-md border bg-background px-3 py-2 text-sm"
-                    placeholder="Description (optional)"
-                />
-                <InputError :message="form.errors.description" />
-            </div>
+                    <div class="grid gap-2">
+                        <Label for="description">Description</Label>
+                        <textarea
+                            id="description"
+                            v-model="form.description"
+                            class="clay-textarea"
+                            placeholder="Description (optional)"
+                        />
+                        <InputError :message="form.errors.description" />
+                    </div>
 
-            <div class="flex items-center gap-2">
-                <Button :disabled="form.processing">Create</Button>
-                <Button variant="outline" as-child>
-                    <Link href="/properties">Cancel</Link>
-                </Button>
-            </div>
-        </form>
+                    <div class="flex items-center justify-end gap-2">
+                        <Button :disabled="form.processing">Create</Button>
+                        <Button variant="outline" as-child>
+                            <Link href="/properties">Cancel</Link>
+                        </Button>
+                    </div>
+                </div>
+            </form>
+        </div>
     </div>
 </template>
-

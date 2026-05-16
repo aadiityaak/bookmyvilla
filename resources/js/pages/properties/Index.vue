@@ -83,8 +83,8 @@ const clearFilters = () => {
 <template>
     <Head title="Property" />
 
-    <div class="flex flex-col gap-6 p-4">
-        <div class="flex items-start justify-between gap-4">
+    <div class="mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 py-8">
+        <div class="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
             <Heading
                 variant="small"
                 title="Property"
@@ -96,12 +96,16 @@ const clearFilters = () => {
             </Button>
         </div>
 
-        <div class="grid grid-cols-1 gap-4 md:grid-cols-12">
-            <div class="md:col-span-5">
+        <div
+            class="rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-card)] p-4"
+        >
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-12">
+                <div class="md:col-span-6">
                 <Label for="q">Search</Label>
                 <Input
                     id="q"
                     v-model="form.q"
+                    class="clay-control"
                     placeholder="Name, address, investor"
                     @keyup.enter="applyFilters"
                 />
@@ -112,7 +116,7 @@ const clearFilters = () => {
                 <select
                     id="type"
                     v-model="form.type"
-                    class="h-9 w-full rounded-md border bg-background px-3 text-sm"
+                    class="clay-select"
                     @change="applyFilters"
                 >
                     <option value="">All</option>
@@ -127,7 +131,7 @@ const clearFilters = () => {
                 <select
                     id="status"
                     v-model="form.status"
-                    class="h-9 w-full rounded-md border bg-background px-3 text-sm"
+                    class="clay-select"
                     @change="applyFilters"
                 >
                     <option value="">All</option>
@@ -136,22 +140,18 @@ const clearFilters = () => {
                     </option>
                 </select>
             </div>
+            </div>
 
-            <div class="flex items-end gap-2 md:col-span-1">
-                <Button
-                    variant="outline"
-                    class="w-full"
-                    :disabled="!hasFilters"
-                    @click="clearFilters"
-                >
-                    Clear
-                </Button>
+            <div v-if="hasFilters" class="mt-4 flex items-center justify-end gap-2">
+                <Button variant="outline" @click="clearFilters"> Clear </Button>
             </div>
         </div>
 
-        <div class="rounded-lg border">
+        <div
+            class="overflow-hidden rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)]"
+        >
             <div
-                class="grid grid-cols-12 gap-3 border-b px-4 py-3 text-sm font-medium"
+                class="grid grid-cols-12 gap-3 border-b border-[color:var(--clay-hairline)] px-5 py-3 text-xs font-medium uppercase tracking-wide text-[color:var(--clay-muted)]"
             >
                 <div class="col-span-3">Name</div>
                 <div class="col-span-2">Type</div>
@@ -163,18 +163,18 @@ const clearFilters = () => {
             <div
                 v-for="property in properties.data"
                 :key="property.id"
-                class="grid grid-cols-12 gap-3 px-4 py-3 text-sm"
+                class="grid grid-cols-12 gap-3 border-b border-[color:var(--clay-hairline)] px-5 py-4 text-sm last:border-b-0 hover:bg-[color:var(--clay-surface-soft)]"
             >
-                <div class="col-span-3 truncate">
+                <div class="col-span-3 truncate font-medium text-[color:var(--clay-ink)]">
                     {{ property.name }}
                 </div>
-                <div class="col-span-2">
+                <div class="col-span-2 text-[color:var(--clay-body)]">
                     {{ property.type }}
                 </div>
-                <div class="col-span-3 truncate">
+                <div class="col-span-3 truncate text-[color:var(--clay-body)]">
                     {{ property.investor_name ?? '-' }}
                 </div>
-                <div class="col-span-2">
+                <div class="col-span-2 text-[color:var(--clay-body)]">
                     {{ property.status }}
                 </div>
                 <div class="col-span-2 flex justify-end">
@@ -192,7 +192,7 @@ const clearFilters = () => {
                 </div>
             </div>
 
-            <div v-if="properties.data.length === 0" class="px-4 py-6 text-sm">
+            <div v-if="properties.data.length === 0" class="px-5 py-10 text-sm text-[color:var(--clay-muted)]">
                 No properties found.
             </div>
         </div>
@@ -202,17 +202,17 @@ const clearFilters = () => {
                 v-for="link in properties.links"
                 :key="link.label"
                 :href="link.url ?? ''"
-                class="rounded-md border px-3 py-1 text-sm"
+                class="rounded-md border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)] px-3 py-1.5 text-sm"
                 :class="[
                     link.active
-                        ? 'bg-accent text-accent-foreground'
-                        : 'bg-background',
+                        ? 'bg-[color:var(--clay-surface-card)] text-[color:var(--clay-ink)]'
+                        : 'text-[color:var(--clay-body)]',
                     !link.url ? 'pointer-events-none opacity-50' : '',
                 ]"
             >
                 <span v-html="link.label" />
             </Link>
-            <span class="ml-auto text-sm text-muted-foreground">
+            <span class="ml-auto text-sm text-[color:var(--clay-muted)]">
                 Total: {{ properties.total }}
             </span>
         </div>
