@@ -14,6 +14,8 @@ createInertiaApp({
         switch (true) {
             case name.startsWith('guest/'):
                 return AppHeaderLayout;
+            case name.startsWith('admin/settings/'):
+                return [AppLayout, SettingsLayout];
             case name.startsWith('admin/'):
                 return AppLayout;
             case name === 'auth/Login':

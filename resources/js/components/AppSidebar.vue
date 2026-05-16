@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, Building2, CalendarDays, FolderGit2, LayoutGrid, Users } from 'lucide-vue-next';
+import { BookOpen, Building2, CalendarDays, FolderGit2, LayoutGrid, Settings, Users } from 'lucide-vue-next';
 import { computed } from 'vue';
 import { usePage } from '@inertiajs/vue3';
 import AppLogo from '@/components/AppLogo.vue';
@@ -50,6 +50,11 @@ const mainNavItems = computed<NavItem[]>(() => {
     ];
 
     if (userRole.value === 'admin') {
+        items.push({
+            title: 'Setting',
+            href: '/admin/settings/branding',
+            icon: Settings,
+        });
         items.push({
             title: 'Users',
             href: '/admin/users',

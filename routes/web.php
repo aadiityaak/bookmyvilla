@@ -105,6 +105,10 @@ Route::middleware(['auth', 'role:host,admin'])->group(function () {
 });
 
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::redirect('settings', '/admin/settings/branding');
+    Route::inertia('settings/branding', 'admin/settings/Branding')->name('settings.branding');
+    Route::inertia('settings/sosmed', 'admin/settings/Sosmed')->name('settings.sosmed');
+
     Route::get('users', [UserController::class, 'index'])->name('users.index');
     Route::get('users/create', [UserController::class, 'create'])->name('users.create');
     Route::post('users', [UserController::class, 'store'])->name('users.store');
