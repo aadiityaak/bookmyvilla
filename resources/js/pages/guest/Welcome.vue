@@ -1,15 +1,32 @@
 <script setup lang="ts">
 import { Head, Link, usePage } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { ArrowUpRight, ChevronLeft, ChevronRight } from 'lucide-vue-next';
+import { computed, ref } from 'vue';
 import { Button } from '@/components/ui/button';
 import { dashboard, login, register } from '@/routes';
 
 const props = withDefaults(
     defineProps<{
         canRegister: boolean;
+        villas: {
+            id: number;
+            type: 'villa';
+            name: string;
+            featured_image: string | null;
+            address: string | null;
+        }[];
+        kosts: {
+            id: number;
+            type: 'kost';
+            name: string;
+            featured_image: string | null;
+            address: string | null;
+        }[];
     }>(),
     {
         canRegister: true,
+        villas: () => [],
+        kosts: () => [],
     },
 );
 
@@ -32,6 +49,173 @@ const primaryCtaLabel = computed(() => {
         return 'Kelola Property';
     return 'Dashboard';
 });
+
+type CarouselItem = {
+    key: string;
+    badge: 'Villa' | 'Kost';
+    title: string;
+    subtitle: string;
+    imageUrl: string | null;
+    href: string | null;
+    bg: string;
+};
+
+const toImageUrl = (path: string | null) => {
+    if (!path) return null;
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    return `/storage/${path}`;
+};
+
+const villaCarouselItems = computed<CarouselItem[]>(() => {
+    if (props.villas.length) {
+        return props.villas.map((p) => ({
+            key: `villa-${p.id}`,
+            badge: 'Villa',
+            title: p.name,
+            subtitle: p.address ?? '—',
+            imageUrl: toImageUrl(p.featured_image),
+            href: `/explore/${p.id}`,
+            bg: 'var(--clay-brand-teal)',
+        }));
+    }
+
+    return [
+        {
+            key: 'villa-fallback-1',
+            badge: 'Villa',
+            title: 'Villa Family',
+            subtitle: 'Cocok untuk liburan bareng',
+            imageUrl: null,
+            href: '/explore',
+            bg: 'var(--clay-brand-teal)',
+        },
+        {
+            key: 'villa-fallback-2',
+            badge: 'Villa',
+            title: 'Villa Private',
+            subtitle: 'Tenang, nyaman, dan eksklusif',
+            imageUrl: null,
+            href: '/explore',
+            bg: 'var(--clay-brand-pink)',
+        },
+        {
+            key: 'villa-fallback-3',
+            badge: 'Villa',
+            title: 'Villa View',
+            subtitle: 'Pilihan dengan spot terbaik',
+            imageUrl: null,
+            href: '/explore',
+            bg: 'var(--clay-brand-lavender)',
+        },
+    ];
+});
+
+const kostCarouselItems = computed<CarouselItem[]>(() => {
+    if (props.kosts.length) {
+        return props.kosts.map((p) => ({
+            key: `kost-${p.id}`,
+            badge: 'Kost',
+            title: p.name,
+            subtitle: p.address ?? '—',
+            imageUrl: toImageUrl(p.featured_image),
+            href: null,
+            bg: 'var(--clay-brand-ochre)',
+        }));
+    }
+
+    return [
+        {
+            key: 'kost-fallback-1',
+            badge: 'Kost',
+            title: 'Kost Harian',
+            subtitle: 'Fleksibel untuk short stay',
+            imageUrl: null,
+            href: null,
+            bg: 'var(--clay-brand-ochre)',
+        },
+        {
+            key: 'kost-fallback-2',
+            badge: 'Kost',
+            title: 'Kost Bulanan',
+            subtitle: 'Nyaman untuk tinggal lebih lama',
+            imageUrl: null,
+            href: null,
+            bg: 'var(--clay-brand-peach)',
+        },
+        {
+            key: 'kost-fallback-3',
+            badge: 'Kost',
+            title: 'Kost Premium',
+            subtitle: 'Fasilitas lengkap & rapi',
+            imageUrl: null,
+            href: null,
+            bg: 'var(--clay-surface-strong)',
+        },
+    ];
+});
+
+const villaTrackRef = ref<HTMLElement | null>(null);
+const kostTrackRef = ref<HTMLElement | null>(null);
+
+const scrollCarousel = (el: HTMLElement | null, direction: 'prev' | 'next') => {
+    if (!el) return;
+    const amount = Math.round(el.clientWidth * 0.85);
+    el.scrollBy({
+        left: direction === 'next' ? amount : -amount,
+        behavior: 'smooth',
+    });
+};
+
+type DragState = {
+    active: boolean;
+    startX: number;
+    startScrollLeft: number;
+    pointerId: number | null;
+};
+
+const createCarouselDrag = () => {
+    const state: DragState = {
+        active: false,
+        startX: 0,
+        startScrollLeft: 0,
+        pointerId: null,
+    };
+
+    const onPointerDown = (e: PointerEvent) => {
+        if (e.pointerType !== 'mouse') return;
+        const el = e.currentTarget as HTMLElement | null;
+        if (!el) return;
+
+        state.active = true;
+        state.pointerId = e.pointerId;
+        state.startX = e.clientX;
+        state.startScrollLeft = el.scrollLeft;
+        el.setPointerCapture(e.pointerId);
+    };
+
+    const onPointerMove = (e: PointerEvent) => {
+        if (!state.active) return;
+        if (e.pointerType !== 'mouse') return;
+        const el = e.currentTarget as HTMLElement | null;
+        if (!el) return;
+        const dx = e.clientX - state.startX;
+        el.scrollLeft = state.startScrollLeft - dx;
+    };
+
+    const onPointerUp = (e: PointerEvent) => {
+        const el = e.currentTarget as HTMLElement | null;
+        if (el && state.pointerId !== null) {
+            el.releasePointerCapture(state.pointerId);
+        }
+        state.active = false;
+        state.pointerId = null;
+    };
+
+    return { onPointerDown, onPointerMove, onPointerUp };
+};
+
+const villaDrag = createCarouselDrag();
+const kostDrag = createCarouselDrag();
 </script>
 
 <template>
@@ -67,31 +251,206 @@ const primaryCtaLabel = computed(() => {
                             </Button>
                         </div>
 
-                        <div
-                            class="mt-8 grid grid-cols-1 gap-3 rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-card)] p-4"
-                        >
-                            <div class="rounded-md bg-[color:var(--clay-canvas)] p-3">
-                                <div class="text-xs font-medium text-[color:var(--clay-muted)]">
-                                    Anti double-booking
+                        <div class="mt-8 grid gap-6">
+                            <div
+                                class="rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-card)] p-4"
+                            >
+                                <div class="flex items-center justify-between gap-3">
+                                    <div>
+                                        <div
+                                            class="text-sm font-medium text-[color:var(--clay-ink)]"
+                                        >
+                                            Rekomendasi Villa
+                                        </div>
+                                        <div
+                                            class="mt-1 text-xs text-[color:var(--clay-muted)]"
+                                        >
+                                            Swipe untuk lihat pilihan
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="icon"
+                                            class="h-9 w-9"
+                                            @click="scrollCarousel(villaTrackRef, 'prev')"
+                                        >
+                                            <ChevronLeft class="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="icon"
+                                            class="h-9 w-9"
+                                            @click="scrollCarousel(villaTrackRef, 'next')"
+                                        >
+                                            <ChevronRight class="h-4 w-4" />
+                                        </Button>
+                                    </div>
                                 </div>
-                                <div class="mt-1 text-sm text-[color:var(--clay-body)]">
-                                    Validasi tanggal otomatis
+
+                                <div
+                                    ref="villaTrackRef"
+                                    class="mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [touch-action:pan-y] select-none cursor-grab active:cursor-grabbing"
+                                    @pointerdown="villaDrag.onPointerDown"
+                                    @pointermove="villaDrag.onPointerMove"
+                                    @pointerup="villaDrag.onPointerUp"
+                                    @pointercancel="villaDrag.onPointerUp"
+                                >
+                                    <div
+                                        v-for="s in villaCarouselItems"
+                                        :key="s.key"
+                                        class="snap-start"
+                                    >
+                                        <div
+                                            class="relative w-[78vw] max-w-[18rem] overflow-hidden rounded-xl border border-[color:var(--clay-hairline)]"
+                                        >
+                                            <div
+                                                class="relative aspect-[4/3]"
+                                                :style="{ backgroundColor: s.bg }"
+                                            >
+                                                <img
+                                                    v-if="s.imageUrl"
+                                                    :src="s.imageUrl"
+                                                    alt=""
+                                                    class="absolute inset-0 h-full w-full object-cover"
+                                                />
+                                                <div
+                                                    class="absolute inset-0 bg-gradient-to-t from-black/25 to-transparent"
+                                                />
+                                                <div
+                                                    class="absolute left-3 top-3 rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-medium text-white"
+                                                >
+                                                    {{ s.badge }}
+                                                </div>
+                                                <Link
+                                                    v-if="s.href"
+                                                    :href="s.href"
+                                                    class="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/25 bg-white/10 text-white backdrop-blur-sm"
+                                                >
+                                                    <ArrowUpRight class="h-4 w-4" />
+                                                </Link>
+                                                <div
+                                                    v-else
+                                                    class="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/25 bg-white/10 text-white/70 backdrop-blur-sm"
+                                                >
+                                                    <ArrowUpRight class="h-4 w-4" />
+                                                </div>
+                                            </div>
+                                            <div
+                                                class="bg-[color:var(--clay-canvas)] p-3"
+                                            >
+                                                <div
+                                                    class="text-sm font-semibold text-[color:var(--clay-ink)]"
+                                                >
+                                                    {{ s.title }}
+                                                </div>
+                                                <div
+                                                    class="mt-1 text-xs text-[color:var(--clay-muted)]"
+                                                >
+                                                    {{ s.subtitle }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="rounded-md bg-[color:var(--clay-canvas)] p-3">
-                                <div class="text-xs font-medium text-[color:var(--clay-muted)]">
-                                    Foto & gallery
+
+                            <div
+                                class="rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-card)] p-4"
+                            >
+                                <div class="flex items-center justify-between gap-3">
+                                    <div>
+                                        <div
+                                            class="text-sm font-medium text-[color:var(--clay-ink)]"
+                                        >
+                                            Rekomendasi Kost
+                                        </div>
+                                        <div
+                                            class="mt-1 text-xs text-[color:var(--clay-muted)]"
+                                        >
+                                            Swipe untuk lihat pilihan
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="icon"
+                                            class="h-9 w-9"
+                                            @click="scrollCarousel(kostTrackRef, 'prev')"
+                                        >
+                                            <ChevronLeft class="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="icon"
+                                            class="h-9 w-9"
+                                            @click="scrollCarousel(kostTrackRef, 'next')"
+                                        >
+                                            <ChevronRight class="h-4 w-4" />
+                                        </Button>
+                                    </div>
                                 </div>
-                                <div class="mt-1 text-sm text-[color:var(--clay-body)]">
-                                    Upload drag & drop
-                                </div>
-                            </div>
-                            <div class="rounded-md bg-[color:var(--clay-canvas)] p-3">
-                                <div class="text-xs font-medium text-[color:var(--clay-muted)]">
-                                    Cocok untuk host
-                                </div>
-                                <div class="mt-1 text-sm text-[color:var(--clay-body)]">
-                                    Manage property cepat
+
+                                <div
+                                    ref="kostTrackRef"
+                                    class="mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [touch-action:pan-y] select-none cursor-grab active:cursor-grabbing"
+                                    @pointerdown="kostDrag.onPointerDown"
+                                    @pointermove="kostDrag.onPointerMove"
+                                    @pointerup="kostDrag.onPointerUp"
+                                    @pointercancel="kostDrag.onPointerUp"
+                                >
+                                    <div
+                                        v-for="s in kostCarouselItems"
+                                        :key="s.key"
+                                        class="snap-start"
+                                    >
+                                        <div
+                                            class="relative w-[78vw] max-w-[18rem] overflow-hidden rounded-xl border border-[color:var(--clay-hairline)]"
+                                        >
+                                            <div
+                                                class="relative aspect-[4/3]"
+                                                :style="{ backgroundColor: s.bg }"
+                                            >
+                                                <img
+                                                    v-if="s.imageUrl"
+                                                    :src="s.imageUrl"
+                                                    alt=""
+                                                    class="absolute inset-0 h-full w-full object-cover"
+                                                />
+                                                <div
+                                                    class="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent"
+                                                />
+                                                <div
+                                                    class="absolute left-3 top-3 rounded-full bg-black/10 px-2.5 py-1 text-[11px] font-medium text-[color:var(--clay-ink)]"
+                                                >
+                                                    {{ s.badge }}
+                                                </div>
+                                                <div
+                                                    class="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full border border-black/10 bg-black/5 text-[color:var(--clay-ink)] backdrop-blur-sm"
+                                                >
+                                                    <ArrowUpRight class="h-4 w-4 opacity-70" />
+                                                </div>
+                                            </div>
+                                            <div
+                                                class="bg-[color:var(--clay-canvas)] p-3"
+                                            >
+                                                <div
+                                                    class="text-sm font-semibold text-[color:var(--clay-ink)]"
+                                                >
+                                                    {{ s.title }}
+                                                </div>
+                                                <div
+                                                    class="mt-1 text-xs text-[color:var(--clay-muted)]"
+                                                >
+                                                    {{ s.subtitle }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { usePage } from '@inertiajs/vue3';
 import { SidebarInset } from '@/components/ui/sidebar';
 import type { AppVariant } from '@/types';
@@ -20,6 +20,17 @@ const isMobileOnly = computed(() => {
     const role = user?.role ?? null;
     return !user || role === 'tenant';
 });
+
+const isScrolling = ref(false);
+let scrollTimer: ReturnType<typeof setTimeout> | null = null;
+
+const onScroll = () => {
+    isScrolling.value = true;
+    if (scrollTimer) clearTimeout(scrollTimer);
+    scrollTimer = setTimeout(() => {
+        isScrolling.value = false;
+    }, 700);
+};
 </script>
 
 <template>
@@ -28,8 +39,13 @@ const isMobileOnly = computed(() => {
     </SidebarInset>
     <main
         v-else
-        class="mx-auto flex h-full w-full flex-1 flex-col gap-4 rounded-lg"
-        :class="[isMobileOnly ? 'max-w-md' : 'max-w-7xl', className]"
+        class="scroll-area mx-auto flex min-h-0 w-full flex-1 flex-col gap-4 overflow-y-auto rounded-lg"
+        :class="[
+            isMobileOnly ? 'max-w-md' : 'max-w-7xl',
+            className,
+            isScrolling ? 'scrolling' : '',
+        ]"
+        @scroll.passive="onScroll"
     >
         <slot />
     </main>

@@ -6,15 +6,50 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
+use App\Models\Property;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\ExploreController;
 use App\Http\Controllers\PropertyController;
 use App\Http\Controllers\Tenant\ProfileController as TenantProfileController;
 
-Route::inertia('/', 'guest/Welcome', [
-    'canRegister' => Features::enabled(Features::registration()),
-])->name('home');
+Route::get('/', function (Request $request) {
+    $villas = Property::query()
+        ->select(['id', 'type', 'name', 'featured_image', 'address'])
+        ->where('status', 'published')
+        ->where('type', 'villa')
+        ->orderByDesc('id')
+        ->limit(10)
+        ->get()
+        ->map(fn(Property $p) => [
+            'id' => $p->id,
+            'type' => $p->type,
+            'name' => $p->name,
+            'featured_image' => $p->featured_image,
+            'address' => $p->address,
+        ]);
+
+    $kosts = Property::query()
+        ->select(['id', 'type', 'name', 'featured_image', 'address'])
+        ->where('status', 'published')
+        ->where('type', 'kost')
+        ->orderByDesc('id')
+        ->limit(10)
+        ->get()
+        ->map(fn(Property $p) => [
+            'id' => $p->id,
+            'type' => $p->type,
+            'name' => $p->name,
+            'featured_image' => $p->featured_image,
+            'address' => $p->address,
+        ]);
+
+    return Inertia::render('guest/Welcome', [
+        'canRegister' => Features::enabled(Features::registration()),
+        'villas' => $villas,
+        'kosts' => $kosts,
+    ]);
+})->name('home');
 
 Route::get('explore', [ExploreController::class, 'index'])->name('explore.index');
 Route::get('explore/{property}', [ExploreController::class, 'show'])->name('explore.show');

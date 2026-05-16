@@ -277,3 +277,32 @@
         @apply bg-background text-foreground;
     }
 }
+
+@layer utilities {
+    .scroll-area {
+        scrollbar-width: thin;
+        scrollbar-color: transparent transparent;
+    }
+
+    .scroll-area::-webkit-scrollbar {
+        width: 4px;
+        height: 4px;
+    }
+
+    .scroll-area::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .scroll-area::-webkit-scrollbar-thumb {
+        background-color: transparent;
+        border-radius: 9999px;
+    }
+
+    .scroll-area.scrolling {
+        scrollbar-color: rgba(10, 10, 10, 0.28) transparent;
+    }
+
+    .scroll-area.scrolling::-webkit-scrollbar-thumb {
+        background-color: rgba(10, 10, 10, 0.28);
+    }
+}
