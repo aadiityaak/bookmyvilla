@@ -173,49 +173,54 @@ type DragState = {
     pointerId: number | null;
 };
 
-const createCarouselDrag = () => {
-    const state: DragState = {
-        active: false,
-        startX: 0,
-        startScrollLeft: 0,
-        pointerId: null,
+type MouseDragState = Omit<DragState, 'pointerId'> & { el: HTMLElement | null };
+
+const startMouseDrag = (e: MouseEvent, el: HTMLElement | null) => {
+    if (!el) return;
+    if (e.button !== 0) return;
+    if (e.target instanceof Element && e.target.closest('a,button,input,select,textarea,label')) {
+        return;
+    }
+
+    const state: MouseDragState = {
+        active: true,
+        startX: e.clientX,
+        startScrollLeft: el.scrollLeft,
+        el,
     };
 
-    const onPointerDown = (e: PointerEvent) => {
-        if (e.pointerType !== 'mouse') return;
-        const el = e.currentTarget as HTMLElement | null;
-        if (!el) return;
-
-        state.active = true;
-        state.pointerId = e.pointerId;
-        state.startX = e.clientX;
-        state.startScrollLeft = el.scrollLeft;
-        el.setPointerCapture(e.pointerId);
+    const onMove = (ev: MouseEvent) => {
+        if (!state.active || !state.el) return;
+        const dx = ev.clientX - state.startX;
+        state.el.scrollLeft = state.startScrollLeft - dx;
     };
 
-    const onPointerMove = (e: PointerEvent) => {
-        if (!state.active) return;
-        if (e.pointerType !== 'mouse') return;
-        const el = e.currentTarget as HTMLElement | null;
-        if (!el) return;
-        const dx = e.clientX - state.startX;
-        el.scrollLeft = state.startScrollLeft - dx;
-    };
-
-    const onPointerUp = (e: PointerEvent) => {
-        const el = e.currentTarget as HTMLElement | null;
-        if (el && state.pointerId !== null) {
-            el.releasePointerCapture(state.pointerId);
-        }
+    const onUp = () => {
         state.active = false;
-        state.pointerId = null;
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseup', onUp);
     };
 
-    return { onPointerDown, onPointerMove, onPointerUp };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
 };
 
-const villaDrag = createCarouselDrag();
-const kostDrag = createCarouselDrag();
+const onCarouselWheel = (e: WheelEvent) => {
+    const el = e.currentTarget as HTMLElement | null;
+    if (!el) return;
+
+    if (el.scrollWidth <= el.clientWidth) {
+        return;
+    }
+
+    const delta =
+        Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+
+    if (Math.abs(delta) > 0) {
+        e.preventDefault();
+        el.scrollLeft += delta;
+    }
+};
 </script>
 
 <template>
@@ -253,10 +258,10 @@ const kostDrag = createCarouselDrag();
 
                         <div class="mt-8 grid gap-6">
                             <div
-                                class="rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-card)] p-4"
+                                class="mx-auto w-full max-w-md rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-card)] p-4"
                             >
-                                <div class="flex items-center justify-between gap-3">
-                                    <div>
+                                <div class="flex items-center gap-3">
+                                    <div class="min-w-0 flex-1">
                                         <div
                                             class="text-sm font-medium text-[color:var(--clay-ink)]"
                                         >
@@ -268,43 +273,48 @@ const kostDrag = createCarouselDrag();
                                             Swipe untuk lihat pilihan
                                         </div>
                                     </div>
-                                    <div class="flex items-center gap-2">
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="icon"
-                                            class="h-9 w-9"
-                                            @click="scrollCarousel(villaTrackRef, 'prev')"
-                                        >
-                                            <ChevronLeft class="h-4 w-4" />
-                                        </Button>
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="icon"
-                                            class="h-9 w-9"
-                                            @click="scrollCarousel(villaTrackRef, 'next')"
-                                        >
-                                            <ChevronRight class="h-4 w-4" />
-                                        </Button>
+                                    <div
+                                        class="shrink-0 overflow-hidden rounded-full border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)]"
+                                    >
+                                        <div class="flex items-center">
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                class="h-8 w-8 rounded-none"
+                                                aria-label="Sebelumnya"
+                                                @click="scrollCarousel(villaTrackRef, 'prev')"
+                                            >
+                                                <ChevronLeft class="h-4 w-4" />
+                                            </Button>
+                                            <div class="h-8 w-px bg-[color:var(--clay-hairline)]" />
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                class="h-8 w-8 rounded-none"
+                                                aria-label="Berikutnya"
+                                                @click="scrollCarousel(villaTrackRef, 'next')"
+                                            >
+                                                <ChevronRight class="h-4 w-4" />
+                                            </Button>
+                                        </div>
                                     </div>
                                 </div>
 
                                 <div
                                     ref="villaTrackRef"
-                                    class="mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [touch-action:pan-y] select-none cursor-grab active:cursor-grabbing"
-                                    @pointerdown="villaDrag.onPointerDown"
-                                    @pointermove="villaDrag.onPointerMove"
-                                    @pointerup="villaDrag.onPointerUp"
-                                    @pointercancel="villaDrag.onPointerUp"
+                                    class="mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 pr-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden select-none cursor-grab active:cursor-grabbing"
+                                    @wheel="onCarouselWheel"
+                                    @mousedown="startMouseDrag($event, villaTrackRef)"
                                 >
                                     <div
                                         v-for="s in villaCarouselItems"
                                         :key="s.key"
-                                        class="snap-start"
+                                        class="w-[calc(100%-2rem)] snap-start shrink-0"
                                     >
                                         <div
-                                            class="relative w-[78vw] max-w-[18rem] overflow-hidden rounded-xl border border-[color:var(--clay-hairline)]"
+                                            class="relative w-full overflow-hidden rounded-xl border border-[color:var(--clay-hairline)]"
                                         >
                                             <div
                                                 class="relative aspect-[4/3]"
@@ -358,10 +368,10 @@ const kostDrag = createCarouselDrag();
                             </div>
 
                             <div
-                                class="rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-card)] p-4"
+                                class="mx-auto w-full max-w-md rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-card)] p-4"
                             >
-                                <div class="flex items-center justify-between gap-3">
-                                    <div>
+                                <div class="flex items-center gap-3">
+                                    <div class="min-w-0 flex-1">
                                         <div
                                             class="text-sm font-medium text-[color:var(--clay-ink)]"
                                         >
@@ -373,43 +383,48 @@ const kostDrag = createCarouselDrag();
                                             Swipe untuk lihat pilihan
                                         </div>
                                     </div>
-                                    <div class="flex items-center gap-2">
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="icon"
-                                            class="h-9 w-9"
-                                            @click="scrollCarousel(kostTrackRef, 'prev')"
-                                        >
-                                            <ChevronLeft class="h-4 w-4" />
-                                        </Button>
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="icon"
-                                            class="h-9 w-9"
-                                            @click="scrollCarousel(kostTrackRef, 'next')"
-                                        >
-                                            <ChevronRight class="h-4 w-4" />
-                                        </Button>
+                                    <div
+                                        class="shrink-0 overflow-hidden rounded-full border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)]"
+                                    >
+                                        <div class="flex items-center">
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                class="h-8 w-8 rounded-none"
+                                                aria-label="Sebelumnya"
+                                                @click="scrollCarousel(kostTrackRef, 'prev')"
+                                            >
+                                                <ChevronLeft class="h-4 w-4" />
+                                            </Button>
+                                            <div class="h-8 w-px bg-[color:var(--clay-hairline)]" />
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                class="h-8 w-8 rounded-none"
+                                                aria-label="Berikutnya"
+                                                @click="scrollCarousel(kostTrackRef, 'next')"
+                                            >
+                                                <ChevronRight class="h-4 w-4" />
+                                            </Button>
+                                        </div>
                                     </div>
                                 </div>
 
                                 <div
                                     ref="kostTrackRef"
-                                    class="mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [touch-action:pan-y] select-none cursor-grab active:cursor-grabbing"
-                                    @pointerdown="kostDrag.onPointerDown"
-                                    @pointermove="kostDrag.onPointerMove"
-                                    @pointerup="kostDrag.onPointerUp"
-                                    @pointercancel="kostDrag.onPointerUp"
+                                    class="mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 pr-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden select-none cursor-grab active:cursor-grabbing"
+                                    @wheel="onCarouselWheel"
+                                    @mousedown="startMouseDrag($event, kostTrackRef)"
                                 >
                                     <div
                                         v-for="s in kostCarouselItems"
                                         :key="s.key"
-                                        class="snap-start"
+                                        class="w-[calc(100%-2rem)] snap-start shrink-0"
                                     >
                                         <div
-                                            class="relative w-[78vw] max-w-[18rem] overflow-hidden rounded-xl border border-[color:var(--clay-hairline)]"
+                                            class="relative w-full overflow-hidden rounded-xl border border-[color:var(--clay-hairline)]"
                                         >
                                             <div
                                                 class="relative aspect-[4/3]"
