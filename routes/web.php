@@ -1,11 +1,14 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
 use Laravel\Fortify\Features;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\ExploreController;
 use App\Http\Controllers\PropertyController;
+use App\Http\Controllers\Tenant\ProfileController as TenantProfileController;
 
 Route::inertia('/', 'Welcome', [
     'canRegister' => Features::enabled(Features::registration()),
@@ -15,13 +18,24 @@ Route::get('explore', [ExploreController::class, 'index'])->name('explore.index'
 Route::get('explore/{property}', [ExploreController::class, 'show'])->name('explore.show');
 
 Route::middleware(['auth'])->group(function () {
-    Route::inertia('dashboard', 'Dashboard')->name('dashboard');
+    Route::get('dashboard', function (Request $request) {
+        $role = $request->user()?->role;
+
+        if ($role === 'tenant') {
+            return Inertia::render('tenant/Dashboard');
+        }
+
+        return Inertia::render('Dashboard');
+    })->name('dashboard');
 });
 
 Route::middleware(['auth', 'role:tenant'])->group(function () {
     Route::get('bookings', [BookingController::class, 'index'])->name('bookings.index');
     Route::post('bookings', [BookingController::class, 'store'])->name('bookings.store');
     Route::get('my-property', [BookingController::class, 'index'])->name('my-property');
+
+    Route::get('profile', [TenantProfileController::class, 'edit'])->name('tenant.profile.edit');
+    Route::patch('profile', [TenantProfileController::class, 'update'])->name('tenant.profile.update');
 });
 
 Route::middleware(['auth', 'role:host,admin,investor'])->group(function () {

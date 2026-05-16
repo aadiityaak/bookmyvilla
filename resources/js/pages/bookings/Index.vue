@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, usePage } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import Heading from '@/components/Heading.vue';
 
 type BookingRow = {
@@ -43,40 +44,32 @@ const imageUrl = (path: string | null) => {
     if (!path) return null;
     return path.startsWith('http') ? path : `/storage/${path}`;
 };
+
+const page = usePage();
+const isMyProperty = computed(() => page.url.startsWith('/my-property'));
+const title = computed(() => (isMyProperty.value ? 'My Property' : 'My Bookings'));
+const description = computed(() =>
+    isMyProperty.value
+        ? 'Riwayat properti yang sedang / pernah kamu sewa'
+        : 'Daftar booking villa kamu',
+);
 </script>
 
 <template>
-    <Head title="Bookings" />
+    <Head :title="title" />
 
-    <div class="mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 py-8">
-        <div class="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
-            <Heading
-                variant="small"
-                title="My Bookings"
-                description="Daftar booking villa kamu"
-            />
-        </div>
+    <div class="flex w-full flex-col gap-6 px-4 py-6">
+        <Heading variant="small" :title="title" :description="description" />
 
-        <div
-            class="overflow-hidden rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)]"
-        >
-            <div
-                class="grid grid-cols-12 gap-3 border-b border-[color:var(--clay-hairline)] px-5 py-3 text-xs font-medium uppercase tracking-wide text-[color:var(--clay-muted)]"
-            >
-                <div class="col-span-5">Property</div>
-                <div class="col-span-3">Dates</div>
-                <div class="col-span-2">Guests</div>
-                <div class="col-span-2">Status</div>
-            </div>
-
+        <div class="space-y-3">
             <div
                 v-for="b in bookings.data"
                 :key="b.id"
-                class="grid grid-cols-12 gap-3 border-b border-[color:var(--clay-hairline)] px-5 py-4 text-sm last:border-b-0 hover:bg-[color:var(--clay-surface-soft)]"
+                class="overflow-hidden rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)]"
             >
-                <div class="col-span-5 flex min-w-0 items-center gap-3">
+                <div class="flex items-start gap-3 p-4">
                     <div
-                        class="h-10 w-14 overflow-hidden rounded-md border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-card)]"
+                        class="h-12 w-16 shrink-0 overflow-hidden rounded-md border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-card)]"
                     >
                         <img
                             v-if="b.property?.featured_image && imageUrl(b.property.featured_image)"
@@ -85,60 +78,78 @@ const imageUrl = (path: string | null) => {
                             class="h-full w-full object-cover"
                         />
                     </div>
-                    <div class="min-w-0">
+
+                    <div class="min-w-0 flex-1">
                         <Link
                             v-if="b.property"
                             :href="`/explore/${b.property.id}`"
-                            class="truncate font-medium text-[color:var(--clay-ink)] hover:underline"
+                            class="truncate font-medium text-[color:var(--clay-ink)]"
                         >
                             {{ b.property.name }}
                         </Link>
-                        <div v-else class="truncate font-medium text-[color:var(--clay-ink)]">
+                        <div
+                            v-else
+                            class="truncate font-medium text-[color:var(--clay-ink)]"
+                        >
                             -
                         </div>
-                        <div class="truncate text-xs text-[color:var(--clay-muted)]">
+
+                        <div class="mt-1 text-xs text-[color:var(--clay-muted)]">
                             #{{ b.id }}
                         </div>
+
+                        <div class="mt-3 space-y-1 text-sm text-[color:var(--clay-body)]">
+                            <div class="flex items-center justify-between gap-3">
+                                <div class="text-[color:var(--clay-muted)]">Tanggal</div>
+                                <div class="text-right">
+                                    {{ b.check_in_date }} → {{ b.check_out_date }}
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between gap-3">
+                                <div class="text-[color:var(--clay-muted)]">Tamu</div>
+                                <div class="text-right">{{ b.guests_count }}</div>
+                            </div>
+                            <div class="flex items-center justify-between gap-3">
+                                <div class="text-[color:var(--clay-muted)]">Status</div>
+                                <div
+                                    class="rounded-md border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-card)] px-2 py-1 text-xs text-[color:var(--clay-ink)]"
+                                >
+                                    {{ b.status }}
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                <div class="col-span-3 text-[color:var(--clay-body)]">
-                    {{ b.check_in_date }} → {{ b.check_out_date }}
-                </div>
-                <div class="col-span-2 text-[color:var(--clay-body)]">
-                    {{ b.guests_count }}
-                </div>
-                <div class="col-span-2 text-[color:var(--clay-body)]">
-                    {{ b.status }}
                 </div>
             </div>
 
             <div
                 v-if="bookings.data.length === 0"
-                class="px-5 py-10 text-sm text-[color:var(--clay-muted)]"
+                class="rounded-lg border border-dashed border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)] p-6 text-sm text-[color:var(--clay-muted)]"
             >
                 Belum ada booking.
             </div>
         </div>
 
-        <div class="flex flex-wrap items-center gap-2">
-            <Link
-                v-for="link in bookings.links"
-                :key="link.label"
-                :href="link.url ?? ''"
-                class="rounded-md border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)] px-3 py-1.5 text-sm"
-                :class="[
-                    link.active
-                        ? 'bg-[color:var(--clay-surface-card)] text-[color:var(--clay-ink)]'
-                        : 'text-[color:var(--clay-body)]',
-                    !link.url ? 'pointer-events-none opacity-50' : '',
-                ]"
-            >
-                <span v-html="link.label" />
-            </Link>
-            <span class="ml-auto text-sm text-[color:var(--clay-muted)]">
+        <div class="flex flex-col gap-3">
+            <div class="flex items-center gap-2 overflow-x-auto pb-1">
+                <Link
+                    v-for="link in bookings.links"
+                    :key="link.label"
+                    :href="link.url ?? ''"
+                    class="shrink-0 rounded-md border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)] px-3 py-1.5 text-sm"
+                    :class="[
+                        link.active
+                            ? 'bg-[color:var(--clay-surface-card)] text-[color:var(--clay-ink)]'
+                            : 'text-[color:var(--clay-body)]',
+                        !link.url ? 'pointer-events-none opacity-50' : '',
+                    ]"
+                >
+                    <span v-html="link.label" />
+                </Link>
+            </div>
+            <div class="text-sm text-[color:var(--clay-muted)]">
                 Total: {{ bookings.total }}
-            </span>
+            </div>
         </div>
     </div>
 </template>
-

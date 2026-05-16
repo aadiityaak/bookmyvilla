@@ -51,13 +51,28 @@ const auth = computed(() => page.props.auth);
 const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
 const canRegister = computed(() => Boolean((page.props as any)?.canRegister));
 
-const isExploreRoute = computed(() => page.url.startsWith('/explore'));
-const isPublicHeader = computed(() => isExploreRoute.value);
+const isPublicHeader = computed(() =>
+    page.url.startsWith('/explore') ||
+    page.url.startsWith('/bookings') ||
+    page.url.startsWith('/my-property') ||
+    page.url.startsWith('/profile'),
+);
+
+const role = computed(() => (auth.value?.user as any)?.role ?? null);
+const publicPrimaryHref = computed(() => {
+    if (!auth.value?.user) return login();
+    if (role.value === 'tenant') return '/my-property';
+    return dashboard();
+});
+const publicPrimaryLabel = computed(() => {
+    if (!auth.value?.user) return 'Masuk';
+    if (role.value === 'tenant') return 'My Property';
+    return 'Dashboard';
+});
 
 const logoHref = computed(() => (auth.value?.user ? dashboard() : '/'));
 
-const activeItemStyles =
-    'text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100';
+const activeItemStyles = 'text-neutral-900';
 
 const isMobileOnly = computed(
     () => !auth.value?.user || auth.value?.user?.role === 'tenant',
@@ -106,19 +121,12 @@ const rightNavItems: NavItem[] = [
 
                 <div class="w-px self-stretch bg-[color:var(--clay-hairline)]" />
 
-                <template v-if="auth.user">
-                    <Button as-child>
-                        <Link :href="dashboard()">Dashboard</Link>
-                    </Button>
-                </template>
-                <template v-else>
-                    <Button variant="ghost" as-child>
-                        <Link :href="login()">Masuk</Link>
-                    </Button>
-                    <Button v-if="canRegister" as-child>
-                        <Link :href="register()">Daftar</Link>
-                    </Button>
-                </template>
+                <Button :variant="auth.user ? 'default' : 'ghost'" as-child>
+                    <Link :href="publicPrimaryHref">{{ publicPrimaryLabel }}</Link>
+                </Button>
+                <Button v-if="!auth.user && canRegister" as-child>
+                    <Link :href="register()">Daftar</Link>
+                </Button>
             </nav>
         </div>
     </div>
