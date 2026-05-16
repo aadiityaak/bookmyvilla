@@ -118,7 +118,7 @@ const statusPillClass = (disabledAt: string | null) => {
         </div>
 
         <div
-            class="rounded-3xl border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-card)] p-4"
+            class="rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-card)] p-6"
         >
             <div class="grid grid-cols-1 gap-4 md:grid-cols-12">
                 <div class="md:col-span-6">
@@ -162,15 +162,13 @@ const statusPillClass = (disabledAt: string | null) => {
                 </div>
             </div>
 
-            <div class="mt-4 flex items-center justify-end gap-2">
-                <Button variant="outline" :disabled="!hasFilters" @click="clearFilters">
-                    Clear
-                </Button>
+            <div v-if="hasFilters" class="mt-4 flex items-center justify-end gap-2">
+                <Button variant="outline" @click="clearFilters"> Clear </Button>
             </div>
         </div>
 
         <div
-            class="overflow-hidden rounded-3xl border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)]"
+            class="overflow-hidden rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)]"
         >
             <div class="grid grid-cols-12 gap-3 border-b border-[color:var(--clay-hairline)] px-5 py-3 text-xs font-medium uppercase tracking-wide text-[color:var(--clay-muted)]">
                 <div class="col-span-5">User</div>

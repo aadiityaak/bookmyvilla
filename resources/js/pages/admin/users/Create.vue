@@ -64,7 +64,7 @@ const cancel = () => {
         </div>
 
         <form
-            class="rounded-3xl border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)] p-6"
+            class="rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)] p-6"
             @submit.prevent="submit"
         >
             <div class="grid gap-6">

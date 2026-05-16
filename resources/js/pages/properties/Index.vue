@@ -149,7 +149,7 @@ const clearFilters = () => {
             </div>
         </div>
 
-        <div class="rounded-xl border">
+        <div class="rounded-lg border">
             <div
                 class="grid grid-cols-12 gap-3 border-b px-4 py-3 text-sm font-medium"
             >
@@ -218,4 +218,3 @@ const clearFilters = () => {
         </div>
     </div>
 </template>
-

@@ -67,7 +67,7 @@ const submit = () => {
         </div>
 
         <div
-            class="rounded-3xl border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-card)] p-4"
+            class="rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-card)] p-4"
         >
             <div class="grid gap-2 text-sm">
                 <div class="flex items-center justify-between gap-3">
@@ -92,7 +92,7 @@ const submit = () => {
         </div>
 
         <form
-            class="rounded-3xl border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)] p-6"
+            class="rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)] p-6"
             @submit.prevent="submit"
         >
             <div class="grid gap-6">

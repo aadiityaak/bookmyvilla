@@ -91,7 +91,7 @@ const destroy = () => {
             </div>
         </div>
 
-        <div class="rounded-xl border p-4">
+        <div class="rounded-lg border p-4">
             <div class="grid gap-2 text-sm">
                 <div class="flex gap-2">
                     <div class="w-40 text-muted-foreground">Property ID</div>
@@ -185,4 +185,3 @@ const destroy = () => {
         </form>
     </div>
 </template>
-
