@@ -58,7 +58,7 @@ const submit = () => {
 <template>
     <Head title="Profil" />
 
-    <div class="flex w-full flex-col gap-6 px-4 py-6">
+    <div class="mx-auto flex w-full max-w-md flex-col gap-6 px-4 py-6">
         <div class="flex items-start justify-between gap-3">
             <Heading
                 variant="small"

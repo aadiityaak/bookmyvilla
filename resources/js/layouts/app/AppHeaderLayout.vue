@@ -37,7 +37,7 @@ const bottomNavItems = computed<BottomNavItem[]>(() => {
         : role.value === 'tenant'
             ? '/my-property'
             : role.value === 'admin'
-                ? '/admin/properties'
+                ? '/my-property'
                 : '/properties';
 
     const accountHref = !user.value ? '/login' : '/profile';

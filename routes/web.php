@@ -90,6 +90,9 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['auth', 'role:tenant'])->group(function () {
     Route::get('bookings', [BookingController::class, 'index'])->name('bookings.index');
     Route::post('bookings', [BookingController::class, 'store'])->name('bookings.store');
+});
+
+Route::middleware(['auth', 'role:tenant,admin'])->group(function () {
     Route::get('my-property', [BookingController::class, 'index'])->name('my-property');
 });
 

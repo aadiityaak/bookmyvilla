@@ -58,7 +58,7 @@ const description = computed(() =>
 <template>
     <Head :title="title" />
 
-    <div class="flex w-full flex-col gap-6 px-4 py-6">
+    <div class="mx-auto flex w-full max-w-md flex-col gap-6 px-4 py-6">
         <Heading variant="small" :title="title" :description="description" />
 
         <div class="space-y-3">
@@ -67,7 +67,7 @@ const description = computed(() =>
                 :key="b.id"
                 class="overflow-hidden rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)]"
             >
-                <div class="flex items-start gap-3 p-4">
+                <div class="flex items-start gap-3 p-3 sm:p-4">
                     <div
                         class="h-12 w-16 shrink-0 overflow-hidden rounded-md border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-card)]"
                     >
