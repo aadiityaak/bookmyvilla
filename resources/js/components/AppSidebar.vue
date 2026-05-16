@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, Building2, FolderGit2, LayoutGrid, Users } from 'lucide-vue-next';
+import { BookOpen, Building2, CalendarDays, FolderGit2, LayoutGrid, Users } from 'lucide-vue-next';
 import { computed } from 'vue';
 import { usePage } from '@inertiajs/vue3';
 import AppLogo from '@/components/AppLogo.vue';
@@ -38,6 +38,15 @@ const mainNavItems = computed<NavItem[]>(() => {
                       icon: Building2,
                   },
               ]),
+        ...(userRole.value === 'tenant'
+            ? [
+                  {
+                      title: 'Bookings',
+                      href: '/bookings',
+                      icon: CalendarDays,
+                  },
+              ]
+            : []),
     ];
 
     if (userRole.value === 'admin') {

@@ -62,11 +62,11 @@ Target awal: meluncurkan produk yang cukup “usable” untuk transaksi end-to-e
 ### 4.2 Konsep inti (entities)
 
 - Properti (Kost/Villa)
-- Unit (kamar untuk kost; untuk villa bisa 1 unit = 1 properti)
-- Investor (opsional; informasi kepemilikan/pendanaan terkait properti)
-- Kalender ketersediaan
-- Booking/Reservation
-- Pembayaran (invoice, status, webhook)
+- Kamar/Unit (khusus kost)
+- Tenancy/Lease (kontrak sewa kamar kost bulanan)
+- Booking/Reservation (khusus villa harian)
+- Invoice & Payment (status, webhook)
+- Investor (relasi user role `investor` / `host` pada properti)
 - Pengguna (penyewa, pemilik/host, admin)
 
 ---
@@ -165,8 +165,8 @@ Target awal: meluncurkan produk yang cukup “usable” untuk transaksi end-to-e
 
 **Definisi data minimal:**
 
-- Properti: nama, tipe, alamat, lat/lng (opsional), deskripsi, fasilitas, aturan, jam check-in/out (villa), kontak, investor (opsional: nama investor / relasi investor).
-- Unit (kost): nama/nomor kamar, harga, fasilitas unit, status aktif.
+- Properti: nama, tipe, alamat, lat/lng (opsional), deskripsi, fasilitas, aturan, jam check-in/out (villa), investor (opsional: relasi user investor/host), cover/featured image + galeri.
+- Kamar (kost): nama/nomor kamar, harga bulanan, fasilitas kamar, kapasitas, status aktif.
 
 ### 7.3 Modul 3 — Booking & Kalender (wajib)
 
@@ -181,15 +181,13 @@ Target awal: meluncurkan produk yang cukup “usable” untuk transaksi end-to-e
     - nightly rate \* jumlah malam
     - biaya tambahan opsional (cleaning fee, pajak, deposit) — bisa phase berikutnya
 
-**Kost (saran untuk MVP):**
-Pilih salah satu pendekatan:
+**Kost (bulanan, per kamar):**
 
-- **Opsi A (paling sederhana):** sewa bulanan dengan “tanggal mulai” dan minimal 1 bulan.
-- **Opsi B (lebih seragam):** harian/mingguan/bulanan (lebih kompleks, berisiko lebih lama).
+- “Aktif” ditentukan oleh **tenancy/lease** per kamar (kontrak sewa), bukan oleh pembayaran.
+- Billing bulanan dicatat lewat **invoice** (mis. per bulan/periode) dan pembayaran dicatat sebagai **payment** terkait invoice.
+- Aturan penting: 1 kamar tidak boleh memiliki tenancy aktif yang overlap pada periode yang sama.
 
-Untuk MVP, rekomendasi: **Opsi A**.
-
-**Fitur booking:**
+**Fitur booking (villa):**
 
 - Buat booking dengan status:
     - `draft` (opsional)
@@ -202,7 +200,7 @@ Untuk MVP, rekomendasi: **Opsi A**.
 
 **Kalender ketersediaan:**
 
-- Host dapat “block” tanggal (villa) atau menonaktifkan unit (kost).
+- Host dapat “block” tanggal (villa) atau menonaktifkan kamar/unit (kost).
 - Kalender menampilkan:
     - booked (confirmed)
     - pending (opsional, bisa dianggap hold dengan TTL)
@@ -212,7 +210,7 @@ Untuk MVP, rekomendasi: **Opsi A**.
 
 **Kemampuan minimal:**
 
-- Generate invoice dari booking.
+- Generate invoice dari booking (villa) atau dari tenancy/invoice bulanan (kost).
 - Integrasi payment gateway (VA, e-wallet, QRIS).
 - Terima webhook untuk update status pembayaran.
 - Rekonsiliasi: booking menjadi `confirmed` ketika pembayaran `paid`.
@@ -264,10 +262,18 @@ Untuk MVP, rekomendasi: **Opsi A**.
 
 ### 9.2 Booking
 
-**FR-BK-01** Pengguna dapat memilih tanggal/periode dan membuat booking.  
-**FR-BK-02** Sistem memvalidasi ketersediaan sebelum membuat booking (server-side).  
-**FR-BK-03** Sistem menyimpan ringkasan harga pada booking (untuk menghindari perubahan harga setelah booking).  
-**FR-BK-04** Booking pending payment akan expired setelah TTL (background job).
+**FR-BK-01** (Villa) Pengguna dapat memilih tanggal check-in/check-out dan membuat booking.  
+**FR-BK-02** (Villa) Sistem memvalidasi ketersediaan sebelum membuat booking (server-side, no overlap untuk booking confirmed).  
+**FR-BK-03** (Villa) Sistem menyimpan ringkasan harga pada booking (untuk menghindari perubahan harga setelah booking).  
+**FR-BK-04** (Villa) Booking pending payment akan expired setelah TTL (background job).
+
+### 9.2.1 Kost Bulanan — Tenancy & Invoice
+
+**FR-KS-01** (Kost) Host/Admin dapat membuat kamar (room) untuk properti bertipe kost.  
+**FR-KS-02** (Kost) Host/Admin dapat membuat tenancy/lease untuk sebuah kamar dan memilih tenant.  
+**FR-KS-03** (Kost) Sistem mencegah tenancy overlap pada kamar yang sama untuk periode yang sama.  
+**FR-KS-04** (Kost) Sistem dapat membuat invoice bulanan berdasarkan tenancy (manual untuk MVP; otomatis via scheduler phase berikutnya).  
+**FR-KS-05** (Kost) “Tenant aktif” ditentukan oleh tenancy status active + tanggal berlaku.
 
 ### 9.3 Kalender Ketersediaan
 
@@ -317,15 +323,17 @@ Untuk MVP, rekomendasi: **Opsi A**.
 > Nama tabel/field final mengikuti konvensi tim, di bawah ini konsepnya.
 
 - `users` (role: tenant/host/investor/admin)
-- `users` (role: tenant/host/admin)
 - `users.is_active` (boolean) atau `users.disabled_at` (timestamp) untuk disable user
-- `investors` (nama/brand, kontak opsional) atau `properties.investor_name` (opsi sederhana MVP)
+- `properties.investor_id` (relasi ke `users.id` dengan role investor/host) atau tabel `investors` (opsional fase lanjut)
 - `users.email_verified_at` / `users.phone_verified_at` (opsional sesuai keputusan verifikasi)
 - `properties` (type: kost/villa, owner_id)
-- `units` (property_id, untuk kost)
+- `rooms` (property_id, untuk kost)
+- `tenancies` (room_id, tenant_user_id, start_date, end_date, status, billing_day, monthly_price)
+- `invoices` (tenancy_id, period_start, period_end, amount, status, due_date)
 - `amenities` + pivot (property_amenities, unit_amenities opsional)
-- `bookings` (user_id, property_id, unit_id nullable, start_date, end_date, status, price_snapshot_json)
-- `payments` (booking_id, provider, external_id, status, amount, raw_payload_json)
+- `bookings` (khusus villa: guest_user_id, property_id, check_in_date, check_out_date, status, price_snapshot_json)
+- `payments` (payable_type/payable_id, provider, external_id, status, amount, raw_payload_json)
+- `orders` + `order_items` (opsional, jika ingin 1 checkout flow lintas tipe)
 - `booking_status_logs` / `payment_status_logs` (audit)
 - `photos` (entity_type, entity_id, url/path, is_cover, sort_order)
 
@@ -337,10 +345,10 @@ Untuk MVP, rekomendasi: **Opsi A**.
 
 - Home / Explore listing
 - Search results + filter
-- Property detail (kost: daftar unit; villa: kalender)
+- Property detail (kost: daftar kamar + status; villa: kalender)
 - Checkout / Payment page
 - Booking status page (success/pending/failed)
-- Host dashboard: properti, unit, kalender, booking
+- Host dashboard: properti, kamar (kost), kalender (villa), tenancy (kost), booking (villa)
 - Admin dashboard (minimal): monitor booking & payment
 - Admin: manajemen user (list, detail, edit role, aktif/nonaktif)
 

@@ -3,14 +3,24 @@
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\BookingController;
+use App\Http\Controllers\ExploreController;
 use App\Http\Controllers\PropertyController;
 
 Route::inertia('/', 'Welcome', [
     'canRegister' => Features::enabled(Features::registration()),
 ])->name('home');
 
+Route::get('explore', [ExploreController::class, 'index'])->name('explore.index');
+Route::get('explore/{property}', [ExploreController::class, 'show'])->name('explore.show');
+
 Route::middleware(['auth'])->group(function () {
     Route::inertia('dashboard', 'Dashboard')->name('dashboard');
+});
+
+Route::middleware(['auth', 'role:tenant'])->group(function () {
+    Route::get('bookings', [BookingController::class, 'index'])->name('bookings.index');
+    Route::post('bookings', [BookingController::class, 'store'])->name('bookings.store');
 });
 
 Route::middleware(['auth', 'role:host,admin,investor'])->group(function () {
