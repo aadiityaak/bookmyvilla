@@ -68,8 +68,8 @@ const imageUrl = (path: string | null) => {
 <template>
     <Head title="Explore" />
 
-    <div class="mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 py-8">
-        <div class="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
+    <div class="mx-auto flex w-full max-w-md flex-col gap-6 px-4 py-6">
+        <div class="flex flex-col items-start justify-between gap-4">
             <Heading
                 variant="small"
                 title="Explore Villa"
@@ -80,33 +80,33 @@ const imageUrl = (path: string | null) => {
         <div
             class="rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-card)] p-4"
         >
-            <div class="grid grid-cols-1 gap-4 md:grid-cols-12">
-                <div class="md:col-span-10">
-                    <Label for="q">Search</Label>
+            <div class="grid grid-cols-1 gap-4">
+                <div>
+                    <Label for="q" class="sr-only">Search</Label>
                     <Input
                         id="q"
                         v-model="form.q"
                         class="clay-control"
-                        placeholder="Name or address"
+                        placeholder="Cari nama villa atau alamat…"
                         @keyup.enter="applyFilters"
                     />
                 </div>
-                <div class="md:col-span-2 md:flex md:items-end">
-                    <Button class="w-full" @click="applyFilters">Search</Button>
+                <div>
+                    <Button class="w-full" @click="applyFilters">Cari</Button>
                 </div>
             </div>
 
             <div v-if="hasFilters" class="mt-4 flex items-center justify-end gap-2">
-                <Button variant="outline" @click="clearFilters">Clear</Button>
+                <Button variant="outline" @click="clearFilters">Reset</Button>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div class="grid grid-cols-1 gap-4">
             <Link
                 v-for="property in properties.data"
                 :key="property.id"
                 :href="`/explore/${property.id}`"
-                class="group overflow-hidden rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)]"
+                class="group touch-manipulation overflow-hidden rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)] transition active:scale-[0.99]"
             >
                 <div
                     class="aspect-[16/9] w-full overflow-hidden bg-[color:var(--clay-surface-card)]"
@@ -139,25 +139,26 @@ const imageUrl = (path: string | null) => {
             </div>
         </div>
 
-        <div class="flex flex-wrap items-center gap-2">
-            <Link
-                v-for="link in properties.links"
-                :key="link.label"
-                :href="link.url ?? ''"
-                class="rounded-md border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)] px-3 py-1.5 text-sm"
-                :class="[
-                    link.active
-                        ? 'bg-[color:var(--clay-surface-card)] text-[color:var(--clay-ink)]'
-                        : 'text-[color:var(--clay-body)]',
-                    !link.url ? 'pointer-events-none opacity-50' : '',
-                ]"
-            >
-                <span v-html="link.label" />
-            </Link>
-            <span class="ml-auto text-sm text-[color:var(--clay-muted)]">
+        <div class="flex flex-col gap-3">
+            <div class="flex items-center gap-2 overflow-x-auto pb-1">
+                <Link
+                    v-for="link in properties.links"
+                    :key="link.label"
+                    :href="link.url ?? ''"
+                    class="shrink-0 rounded-md border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)] px-3 py-1.5 text-sm"
+                    :class="[
+                        link.active
+                            ? 'bg-[color:var(--clay-surface-card)] text-[color:var(--clay-ink)]'
+                            : 'text-[color:var(--clay-body)]',
+                        !link.url ? 'pointer-events-none opacity-50' : '',
+                    ]"
+                >
+                    <span v-html="link.label" />
+                </Link>
+            </div>
+            <div class="text-sm text-[color:var(--clay-muted)]">
                 Total: {{ properties.total }}
-            </span>
+            </div>
         </div>
     </div>
 </template>
-

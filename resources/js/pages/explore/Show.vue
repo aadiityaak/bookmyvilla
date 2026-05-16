@@ -80,8 +80,8 @@ const submit = () => {
 <template>
     <Head :title="property.name" />
 
-    <div class="mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 py-8">
-        <div class="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
+    <div class="mx-auto flex w-full max-w-md flex-col gap-8 px-6 py-8">
+        <div class="flex flex-col items-start justify-between gap-4">
             <div class="min-w-0">
                 <Heading
                     variant="small"
@@ -94,8 +94,8 @@ const submit = () => {
             </Button>
         </div>
 
-        <div class="grid grid-cols-1 gap-6 lg:grid-cols-12">
-            <div class="lg:col-span-8">
+        <div class="grid grid-cols-1 gap-6">
+            <div>
                 <div
                     class="overflow-hidden rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)]"
                 >
@@ -161,7 +161,7 @@ const submit = () => {
                 </div>
             </div>
 
-            <div class="lg:col-span-4">
+            <div>
                 <div
                     class="rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-card)] p-5"
                 >
@@ -224,4 +224,3 @@ const submit = () => {
         </div>
     </div>
 </template>
-

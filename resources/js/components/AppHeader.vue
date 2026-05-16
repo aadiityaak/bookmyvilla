@@ -35,7 +35,7 @@ import UserMenuContent from '@/components/UserMenuContent.vue';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { getInitials } from '@/composables/useInitials';
 import { toUrl } from '@/lib/utils';
-import { dashboard } from '@/routes';
+import { dashboard, login } from '@/routes';
 import type { BreadcrumbItem, NavItem } from '@/types';
 
 type Props = {
@@ -50,16 +50,29 @@ const page = usePage();
 const auth = computed(() => page.props.auth);
 const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
 
+const logoHref = computed(() => (auth.value?.user ? dashboard() : '/'));
+
 const activeItemStyles =
     'text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100';
 
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
-    },
-];
+const isMobileOnly = computed(
+    () => !auth.value?.user || auth.value?.user?.role === 'tenant',
+);
+
+const mainNavItems = computed<NavItem[]>(() => {
+    if (!auth.value?.user) {
+        return [{ title: 'Explore', href: '/explore', icon: Search }];
+    }
+
+    if (auth.value?.user?.role === 'tenant') {
+        return [
+            { title: 'Explore', href: '/explore', icon: Search },
+            { title: 'Bookings', href: '/bookings', icon: LayoutGrid },
+        ];
+    }
+
+    return [{ title: 'Dashboard', href: dashboard(), icon: LayoutGrid }];
+});
 
 const rightNavItems: NavItem[] = [
     {
@@ -78,9 +91,12 @@ const rightNavItems: NavItem[] = [
 <template>
     <div>
         <div class="border-b border-sidebar-border/80">
-            <div class="mx-auto flex h-16 items-center px-4 md:max-w-7xl">
+            <div
+                class="mx-auto flex h-16 items-center px-4"
+                :class="[isMobileOnly ? 'max-w-md' : 'md:max-w-7xl']"
+            >
                 <!-- Mobile Menu -->
-                <div class="lg:hidden">
+                <div :class="[isMobileOnly ? '' : 'lg:hidden']">
                     <Sheet>
                         <SheetTrigger :as-child="true">
                             <Button
@@ -124,7 +140,7 @@ const rightNavItems: NavItem[] = [
                                         {{ item.title }}
                                     </Link>
                                 </nav>
-                                <div class="flex flex-col space-y-4">
+                                <div v-if="!isMobileOnly" class="flex flex-col space-y-4">
                                     <a
                                         v-for="item in rightNavItems"
                                         :key="item.title"
@@ -146,12 +162,12 @@ const rightNavItems: NavItem[] = [
                     </Sheet>
                 </div>
 
-                <Link :href="dashboard()" class="flex items-center gap-x-2">
+                <Link :href="logoHref" class="flex items-center gap-x-2">
                     <AppLogo />
                 </Link>
 
                 <!-- Desktop Menu -->
-                <div class="hidden h-full lg:flex lg:flex-1">
+                <div v-if="!isMobileOnly" class="hidden h-full lg:flex lg:flex-1">
                     <NavigationMenu class="ml-10 flex h-full items-stretch">
                         <NavigationMenuList
                             class="flex h-full items-stretch space-x-2"
@@ -189,7 +205,7 @@ const rightNavItems: NavItem[] = [
                 </div>
 
                 <div class="ml-auto flex items-center space-x-2">
-                    <div class="relative flex items-center space-x-1">
+                    <div v-if="!isMobileOnly" class="relative flex items-center space-x-1">
                         <Button
                             variant="ghost"
                             size="icon"
@@ -238,20 +254,18 @@ const rightNavItems: NavItem[] = [
                         </div>
                     </div>
 
-                    <DropdownMenu>
+                    <DropdownMenu v-if="auth.user">
                         <DropdownMenuTrigger :as-child="true">
                             <Button
                                 variant="ghost"
                                 size="icon"
                                 class="relative size-10 w-auto rounded-full p-1 focus-within:ring-2 focus-within:ring-primary"
                             >
-                                <Avatar
-                                    class="size-8 overflow-hidden rounded-full"
-                                >
+                                <Avatar class="size-8 overflow-hidden rounded-full">
                                     <AvatarImage
-                                        v-if="auth.user.avatar"
-                                        :src="auth.user.avatar"
-                                        :alt="auth.user.name"
+                                        v-if="auth.user?.avatar"
+                                        :src="auth.user?.avatar"
+                                        :alt="String(auth.user?.name ?? '')"
                                     />
                                     <AvatarFallback
                                         class="rounded-lg bg-neutral-200 font-semibold text-black dark:bg-neutral-700 dark:text-white"
@@ -265,6 +279,9 @@ const rightNavItems: NavItem[] = [
                             <UserMenuContent :user="auth.user" />
                         </DropdownMenuContent>
                     </DropdownMenu>
+                    <Button v-else as-child>
+                        <Link :href="login()">Log in</Link>
+                    </Button>
                 </div>
             </div>
         </div>
@@ -274,7 +291,8 @@ const rightNavItems: NavItem[] = [
             class="flex w-full border-b border-sidebar-border/70"
         >
             <div
-                class="mx-auto flex h-12 w-full items-center justify-start px-4 text-neutral-500 md:max-w-7xl"
+                class="mx-auto flex h-12 w-full items-center justify-start px-4 text-neutral-500"
+                :class="[isMobileOnly ? 'max-w-md' : 'md:max-w-7xl']"
             >
                 <Breadcrumbs :breadcrumbs="breadcrumbs" />
             </div>
