@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Booking;
 use App\Models\Property;
-use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -15,23 +14,9 @@ class ExploreController extends Controller
     {
         $filters = [
             'q' => $request->string('q')->toString(),
-            'investor_id' => $request->string('investor_id')->toString(),
             'with_photo' => $request->boolean('with_photo'),
             'sort' => $request->string('sort')->toString() ?: 'latest',
         ];
-
-        $investorIds = Property::query()
-            ->where('type', 'villa')
-            ->where('status', 'published')
-            ->whereNotNull('investor_id')
-            ->distinct()
-            ->pluck('investor_id');
-
-        $investors = User::query()
-            ->select(['id', 'name'])
-            ->whereIn('id', $investorIds)
-            ->orderBy('name')
-            ->get();
 
         $propertiesQuery = Property::query()
             ->where('type', 'villa')
@@ -43,11 +28,7 @@ class ExploreController extends Controller
                         ->orWhere('address', 'like', '%' . $term . '%');
                 });
             })
-            ->when($filters['with_photo'], fn($q) => $q->whereNotNull('featured_image'))
-            ->when(
-                is_numeric($filters['investor_id'] ?? null),
-                fn($q) => $q->where('investor_id', (int) $filters['investor_id']),
-            );
+            ->when($filters['with_photo'], fn($q) => $q->whereNotNull('featured_image'));
 
         switch ($filters['sort']) {
             case 'name_asc':
@@ -63,19 +44,24 @@ class ExploreController extends Controller
 
         $properties = $propertiesQuery
             ->paginate(12)
-            ->withQueryString()
+            ->appends(array_filter([
+                'q' => $filters['q'] ?: null,
+                'with_photo' => $filters['with_photo'] ? 1 : null,
+                'sort' => $filters['sort'] !== 'latest' ? $filters['sort'] : null,
+            ], fn($value) => $value !== null && $value !== ''))
             ->through(fn(Property $property) => [
                 'id' => $property->id,
                 'type' => $property->type,
                 'name' => $property->name,
                 'featured_image' => $property->featured_image,
                 'address' => $property->address,
+                'latitude' => $property->latitude,
+                'longitude' => $property->longitude,
             ]);
 
         return Inertia::render('guest/explore/Index', [
             'filters' => $filters,
             'properties' => $properties,
-            'investors' => $investors,
         ]);
     }
 

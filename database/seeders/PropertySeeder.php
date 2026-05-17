@@ -76,12 +76,8 @@ class PropertySeeder extends Seeder
         $regencyId = count($regencyIds) ? $faker->randomElement($regencyIds) : null;
       }
 
-      $latitude = null;
-      $longitude = null;
-      if ($hasLatitude && $hasLongitude && $provinceId) {
-        $latitude = $faker->latitude(-11.0, 6.2);
-        $longitude = $faker->longitude(95.0, 141.0);
-      }
+      $latitude = $hasLatitude ? $faker->latitude(-8.9, -8.1) : null;
+      $longitude = $hasLongitude ? $faker->longitude(114.4, 115.7) : null;
 
       $descriptionParagraphs = $faker->optional(0.75)->paragraphs($faker->numberBetween(2, 4));
       $description = is_array($descriptionParagraphs) && count($descriptionParagraphs)
