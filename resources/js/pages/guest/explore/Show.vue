@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
+import { Splide, SplideSlide } from '@splidejs/vue-splide';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import '@splidejs/vue-splide/css';
 
 type PropertyDetail = {
     id: number;
@@ -64,6 +66,9 @@ const galleryImages = computed(() => {
     const normalized = images.map((p) => imageUrl(p) ?? '').filter(Boolean);
     return Array.from(new Set(normalized));
 });
+
+const heroImage = computed(() => galleryImages.value[0] ?? null);
+const carouselImages = computed(() => galleryImages.value.slice(1));
 
 const form = useForm({
     property_id: props.property.id,
@@ -254,43 +259,59 @@ onBeforeUnmount(() => {
     <Head :title="property.name" />
 
     <div class="mx-auto flex w-full max-w-md flex-col gap-8 px-6 py-8">
-        <div class="flex flex-col items-start justify-between gap-4">
-            <div class="min-w-0">
-                <Heading
-                    variant="small"
-                    :title="property.name"
-                    :description="property.address ?? '—'"
-                />
-            </div>
-            <Button variant="outline" as-child>
-                <Link href="/explore">Back</Link>
-            </Button>
-        </div>
-
         <div class="grid grid-cols-1 gap-6">
             <div>
-                <div
-                    class="overflow-hidden rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)]"
-                >
-                    <div
-                        class="aspect-[16/9] w-full overflow-hidden bg-[color:var(--clay-surface-card)]"
-                    >
+                <div class="overflow-hidden rounded-xl border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-card)]">
+                    <div class="relative aspect-[16/9] w-full">
                         <img
-                            v-if="galleryImages[0]"
-                            :src="galleryImages[0]"
+                            v-if="heroImage"
+                            :src="heroImage"
                             alt=""
-                            class="h-full w-full object-cover"
+                            class="absolute inset-0 h-full w-full object-cover"
                         />
-                    </div>
-                    <div v-if="galleryImages.length > 1" class="grid grid-cols-4 gap-2 p-4">
-                        <div
-                            v-for="src in galleryImages.slice(1, 9)"
-                            :key="src"
-                            class="aspect-[4/3] overflow-hidden rounded-md border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-card)]"
-                        >
-                            <img :src="src" alt="" class="h-full w-full object-cover" />
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+                        <div class="absolute inset-0 flex flex-col justify-between p-4">
+                            <div class="flex items-start justify-between gap-3">
+                                <Button size="sm" variant="outline" class="bg-white/10 text-white hover:bg-white/20 hover:text-white border-white/25" as-child>
+                                    <Link href="/explore">Kembali</Link>
+                                </Button>
+                            </div>
+                            <div class="min-w-0">
+                                <div class="truncate text-lg font-semibold text-white">
+                                    {{ property.name }}
+                                </div>
+                                <div class="mt-1 truncate text-sm text-white/80">
+                                    {{ property.address ?? '—' }}
+                                </div>
+                            </div>
                         </div>
                     </div>
+                </div>
+
+                <div
+                    v-if="carouselImages.length"
+                    class="mt-6 overflow-hidden rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)]"
+                >
+                    <Splide
+                        class="p-4"
+                        :options="{
+                            type: 'slide',
+                            perPage: 1,
+                            gap: '0.75rem',
+                            arrows: false,
+                            pagination: true,
+                            drag: true,
+                            speed: 450,
+                        }"
+                    >
+                        <SplideSlide v-for="src in carouselImages" :key="src">
+                            <div class="overflow-hidden rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-card)]">
+                                <div class="aspect-[16/9] w-full overflow-hidden">
+                                    <img :src="src" alt="" class="h-full w-full object-cover" />
+                                </div>
+                            </div>
+                        </SplideSlide>
+                    </Splide>
                 </div>
 
                 <div
@@ -302,9 +323,7 @@ onBeforeUnmount(() => {
                 <div
                     class="mt-6 rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)] p-5"
                 >
-                    <div class="text-sm font-medium text-[color:var(--clay-ink)]">
-                        Description
-                    </div>
+                    <Heading variant="small" title="Description" />
                     <div
                         v-if="property.description"
                         class="prose prose-sm mt-3 max-w-none text-[color:var(--clay-body)]"

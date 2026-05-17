@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { Splide, SplideSlide } from '@splidejs/vue-splide';
 import { ArrowUpRight, ChevronLeft, ChevronRight } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 import { Button } from '@/components/ui/button';
 import { dashboard, login, register } from '@/routes';
+import '@splidejs/vue-splide/css';
 
 const props = withDefaults(
     defineProps<{
@@ -154,26 +156,8 @@ const kostCarouselItems = computed<CarouselItem[]>(() => {
     ];
 });
 
-const villaTrackRef = ref<HTMLElement | null>(null);
-const kostTrackRef = ref<HTMLElement | null>(null);
-
-const scrollCarousel = (el: HTMLElement | null, direction: 'prev' | 'next') => {
-    if (!el) return;
-    const amount = Math.round(el.clientWidth * 0.85);
-    el.scrollBy({
-        left: direction === 'next' ? amount : -amount,
-        behavior: 'smooth',
-    });
-};
-
-type DragState = {
-    active: boolean;
-    startX: number;
-    startScrollLeft: number;
-    pointerId: number | null;
-};
-
-type MouseDragState = Omit<DragState, 'pointerId'> & { el: HTMLElement | null };
+const villaSplideRef = ref<any>(null);
+const kostSplideRef = ref<any>(null);
 
 const lastDragAt = ref(0);
 const markDragged = () => {
@@ -181,58 +165,10 @@ const markDragged = () => {
 };
 const wasJustDragged = () => Date.now() - lastDragAt.value < 250;
 
-const startMouseDrag = (e: MouseEvent, el: HTMLElement | null) => {
-    if (!el) return;
-    if (e.button !== 0) return;
-    if (e.target instanceof Element && e.target.closest('a,button,input,select,textarea,label')) {
-        return;
-    }
-
-    const state: MouseDragState = {
-        active: true,
-        startX: e.clientX,
-        startScrollLeft: el.scrollLeft,
-        el,
-    };
-
-    const onMove = (ev: MouseEvent) => {
-        if (!state.active || !state.el) return;
-        const dx = ev.clientX - state.startX;
-        state.el.scrollLeft = state.startScrollLeft - dx;
-        if (Math.abs(dx) > 8) {
-            markDragged();
-        }
-    };
-
-    const onUp = () => {
-        state.active = false;
-        markDragged();
-        window.removeEventListener('mousemove', onMove);
-        window.removeEventListener('mouseup', onUp);
-    };
-
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
-};
-
-const onCarouselWheel = (e: WheelEvent) => {
-    const el = e.currentTarget as HTMLElement | null;
-    if (!el) return;
-
-    if (el.scrollWidth <= el.clientWidth) {
-        return;
-    }
-
-    const isHorizontalIntent = Math.abs(e.deltaX) > Math.abs(e.deltaY);
-    const allowShiftWheel = e.shiftKey && Math.abs(e.deltaY) > 0;
-
-    if (!isHorizontalIntent && !allowShiftWheel) {
-        return;
-    }
-
-    const delta = isHorizontalIntent ? e.deltaX : e.deltaY;
-    e.preventDefault();
-    el.scrollLeft += delta;
+const goCarousel = (refEl: any, direction: 'prev' | 'next') => {
+    const api = refEl?.value?.splide ?? refEl?.value;
+    const control = direction === 'next' ? '>' : '<';
+    api?.go?.(control);
 };
 
 const onCarouselItemClick = (href: string | null, e: MouseEvent) => {
@@ -305,7 +241,7 @@ const onCarouselItemClick = (href: string | null, e: MouseEvent) => {
                                                 size="icon"
                                                 class="h-8 w-8 rounded-none"
                                                 aria-label="Sebelumnya"
-                                                @click="scrollCarousel(villaTrackRef, 'prev')"
+                                                @click="goCarousel(villaSplideRef, 'prev')"
                                             >
                                                 <ChevronLeft class="h-4 w-4" />
                                             </Button>
@@ -316,7 +252,7 @@ const onCarouselItemClick = (href: string | null, e: MouseEvent) => {
                                                 size="icon"
                                                 class="h-8 w-8 rounded-none"
                                                 aria-label="Berikutnya"
-                                                @click="scrollCarousel(villaTrackRef, 'next')"
+                                                @click="goCarousel(villaSplideRef, 'next')"
                                             >
                                                 <ChevronRight class="h-4 w-4" />
                                             </Button>
@@ -324,16 +260,26 @@ const onCarouselItemClick = (href: string | null, e: MouseEvent) => {
                                     </div>
                                 </div>
 
-                                <div
-                                    ref="villaTrackRef"
-                                    class="mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 pr-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden select-none cursor-grab active:cursor-grabbing"
-                                    @wheel="onCarouselWheel"
-                                    @mousedown="startMouseDrag($event, villaTrackRef)"
+                                <Splide
+                                    ref="villaSplideRef"
+                                    class="mt-4"
+                                    :options="{
+                                        type: 'slide',
+                                        perPage: 1,
+                                        gap: '0.75rem',
+                                        padding: { right: '2.5rem' },
+                                        focus: 0,
+                                        arrows: false,
+                                        pagination: false,
+                                        drag: true,
+                                        speed: 450,
+                                    }"
+                                    @moved="markDragged"
                                 >
-                                    <div
+                                    <SplideSlide
                                         v-for="s in villaCarouselItems"
                                         :key="s.key"
-                                        class="w-[calc(100%-2rem)] snap-start shrink-0"
+                                        class="pb-1"
                                     >
                                         <div
                                             class="relative w-full overflow-hidden rounded-xl border border-[color:var(--clay-hairline)]"
@@ -381,14 +327,14 @@ const onCarouselItemClick = (href: string | null, e: MouseEvent) => {
                                                     {{ s.title }}
                                                 </div>
                                                 <div
-                                                    class="mt-1 line-clamp-2 text-xs text-[color:var(--clay-muted)]"
+                                                    class="mt-1 truncate text-xs text-[color:var(--clay-muted)]"
                                                 >
                                                     {{ s.subtitle }}
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                </div>
+                                    </SplideSlide>
+                                </Splide>
                             </div>
 
                             <div
@@ -417,7 +363,7 @@ const onCarouselItemClick = (href: string | null, e: MouseEvent) => {
                                                 size="icon"
                                                 class="h-8 w-8 rounded-none"
                                                 aria-label="Sebelumnya"
-                                                @click="scrollCarousel(kostTrackRef, 'prev')"
+                                                @click="goCarousel(kostSplideRef, 'prev')"
                                             >
                                                 <ChevronLeft class="h-4 w-4" />
                                             </Button>
@@ -428,7 +374,7 @@ const onCarouselItemClick = (href: string | null, e: MouseEvent) => {
                                                 size="icon"
                                                 class="h-8 w-8 rounded-none"
                                                 aria-label="Berikutnya"
-                                                @click="scrollCarousel(kostTrackRef, 'next')"
+                                                @click="goCarousel(kostSplideRef, 'next')"
                                             >
                                                 <ChevronRight class="h-4 w-4" />
                                             </Button>
@@ -436,16 +382,26 @@ const onCarouselItemClick = (href: string | null, e: MouseEvent) => {
                                     </div>
                                 </div>
 
-                                <div
-                                    ref="kostTrackRef"
-                                    class="mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 pr-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden select-none cursor-grab active:cursor-grabbing"
-                                    @wheel="onCarouselWheel"
-                                    @mousedown="startMouseDrag($event, kostTrackRef)"
+                                <Splide
+                                    ref="kostSplideRef"
+                                    class="mt-4"
+                                    :options="{
+                                        type: 'slide',
+                                        perPage: 1,
+                                        gap: '0.75rem',
+                                        padding: { right: '2.5rem' },
+                                        focus: 0,
+                                        arrows: false,
+                                        pagination: false,
+                                        drag: true,
+                                        speed: 450,
+                                    }"
+                                    @moved="markDragged"
                                 >
-                                    <div
+                                    <SplideSlide
                                         v-for="s in kostCarouselItems"
                                         :key="s.key"
-                                        class="w-[calc(100%-2rem)] snap-start shrink-0"
+                                        class="pb-1"
                                     >
                                         <div
                                             class="relative w-full overflow-hidden rounded-xl border border-[color:var(--clay-hairline)]"
@@ -483,14 +439,14 @@ const onCarouselItemClick = (href: string | null, e: MouseEvent) => {
                                                     {{ s.title }}
                                                 </div>
                                                 <div
-                                                    class="mt-1 line-clamp-2 text-xs text-[color:var(--clay-muted)]"
+                                                    class="mt-1 truncate text-xs text-[color:var(--clay-muted)]"
                                                 >
                                                     {{ s.subtitle }}
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                </div>
+                                    </SplideSlide>
+                                </Splide>
                             </div>
                         </div>
                     </div>
