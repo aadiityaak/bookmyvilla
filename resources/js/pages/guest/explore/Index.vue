@@ -10,7 +10,6 @@ import {
 } from 'vue';
 import Heading from '@/components/Heading.vue';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
@@ -39,8 +38,9 @@ type PropertiesPaginator = {
 const props = defineProps<{
     filters: {
         q?: string;
-        with_photo?: boolean;
         sort?: string;
+        user_lat?: string;
+        user_lng?: string;
     };
     properties: PropertiesPaginator;
 }>();
@@ -58,22 +58,75 @@ defineOptions({
 
 const form = useForm({
     q: props.filters.q ?? '',
-    with_photo: Boolean(props.filters.with_photo ?? false),
     sort: props.filters.sort ?? 'latest',
 });
 
 const hasFilters = computed(() =>
-    Boolean(form.q || form.with_photo || form.sort !== 'latest'),
+    Boolean(form.q || form.sort !== 'latest'),
 );
 
-const applyFilters = () => {
-    router.get('/explore', form.data(), { preserveState: true, replace: true });
+const userCoords = ref<{ lat: number; lng: number; accuracy: number | null } | null>(
+    props.filters.user_lat && props.filters.user_lng
+        ? {
+              lat: Number(props.filters.user_lat),
+              lng: Number(props.filters.user_lng),
+              accuracy: null,
+          }
+        : null,
+);
+
+const getBrowserCoords = () => {
+    return new Promise<{ lat: number; lng: number; accuracy: number | null }>(
+        (resolve, reject) => {
+        if (!('geolocation' in navigator)) {
+            reject(new Error('geolocation_not_supported'));
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            (pos) =>
+                resolve({
+                    lat: pos.coords.latitude,
+                    lng: pos.coords.longitude,
+                    accuracy: Number.isFinite(pos.coords.accuracy)
+                        ? pos.coords.accuracy
+                        : null,
+                }),
+            (err) => reject(err),
+            { enableHighAccuracy: true, maximumAge: 60_000, timeout: 10_000 },
+        );
+    },
+    );
+};
+
+const applyFilters = async () => {
+    const payload: Record<string, string> = {
+        q: form.q ?? '',
+        sort: form.sort ?? 'latest',
+    };
+
+    if (payload.sort === 'nearest') {
+        if (!userCoords.value) {
+            try {
+                userCoords.value = await getBrowserCoords();
+            } catch {
+                userCoords.value = null;
+            }
+        }
+
+        if (userCoords.value) {
+            payload.user_lat = String(userCoords.value.lat);
+            payload.user_lng = String(userCoords.value.lng);
+        }
+    }
+
+    router.get('/explore', payload, { preserveState: true, replace: true });
 };
 
 const clearFilters = () => {
     form.q = '';
-    form.with_photo = false;
     form.sort = 'latest';
+    userCoords.value = null;
     applyFilters();
 };
 
@@ -85,7 +138,8 @@ const imageUrl = (path: string | null) => {
 const isClient = ref(false);
 const mapEl = ref<HTMLDivElement | null>(null);
 let map: any = null;
-let markersLayer: any = null;
+let clusterLayer: any = null;
+let userLayer: any = null;
 
 const escapeHtml = (value: string) => {
     return value.replace(/[&<>"']/g, (ch) => {
@@ -120,6 +174,9 @@ const ensureMap = async () => {
     const L: any = (leafletModule as any).default ?? leafletModule;
     (window as any).__leaflet = L;
     await import('leaflet/dist/leaflet.css');
+    await import('leaflet.markercluster');
+    await import('leaflet.markercluster/dist/MarkerCluster.css');
+    await import('leaflet.markercluster/dist/MarkerCluster.Default.css');
 
     const markerIcon2x = (
         await import('leaflet/dist/images/marker-icon-2x.png')
@@ -145,15 +202,59 @@ const ensureMap = async () => {
         attribution: '&copy; OpenStreetMap contributors',
     }).addTo(map);
 
-    markersLayer = L.featureGroup().addTo(map);
+    clusterLayer = L.markerClusterGroup({
+        showCoverageOnHover: false,
+        spiderfyOnMaxZoom: true,
+        disableClusteringAtZoom: 16,
+        maxClusterRadius: 45,
+    });
+    map.addLayer(clusterLayer);
+
+    userLayer = L.layerGroup();
+    map.addLayer(userLayer);
+};
+
+const updateUserLocation = async () => {
+    await ensureMap();
+    if (!map || !userLayer || !(window as any).__leaflet) return;
+
+    const L = (window as any).__leaflet;
+    userLayer.clearLayers();
+
+    if (!userCoords.value) return;
+    if (!isValidLatLng(userCoords.value.lat, userCoords.value.lng)) return;
+
+    const lat = userCoords.value.lat;
+    const lng = userCoords.value.lng;
+    const accuracy = userCoords.value.accuracy;
+
+    if (typeof accuracy === 'number' && accuracy > 0) {
+        L.circle([lat, lng], {
+            radius: accuracy,
+            color: '#2563eb',
+            weight: 1,
+            fillColor: '#3b82f6',
+            fillOpacity: 0.12,
+        }).addTo(userLayer);
+    }
+
+    L.circleMarker([lat, lng], {
+        radius: 7,
+        color: '#1d4ed8',
+        weight: 2,
+        fillColor: '#3b82f6',
+        fillOpacity: 0.9,
+    })
+        .addTo(userLayer)
+        .bindPopup('Lokasi saya');
 };
 
 const updateMarkers = async () => {
     await ensureMap();
-    if (!map || !markersLayer || !(window as any).__leaflet) return;
+    if (!map || !clusterLayer || !(window as any).__leaflet) return;
 
     const L = (window as any).__leaflet;
-    markersLayer.clearLayers();
+    clusterLayer.clearLayers();
 
     const points = props.properties.data.filter((p) =>
         isValidLatLng(p.latitude, p.longitude),
@@ -174,20 +275,36 @@ const updateMarkers = async () => {
             </div>
         `.trim();
 
-        L.marker([lat, lng]).addTo(markersLayer).bindPopup(popupHtml);
+        const marker = L.marker([lat, lng]).bindPopup(popupHtml);
+        clusterLayer.addLayer(marker);
     }
 
     if (points.length > 0) {
-        const bounds = markersLayer.getBounds();
+        const bounds = clusterLayer.getBounds();
+        if (userCoords.value && isValidLatLng(userCoords.value.lat, userCoords.value.lng)) {
+            bounds.extend([userCoords.value.lat, userCoords.value.lng]);
+        }
         if (bounds.isValid()) {
             map.fitBounds(bounds.pad(0.2), { maxZoom: 15 });
         }
+    } else if (userCoords.value && isValidLatLng(userCoords.value.lat, userCoords.value.lng)) {
+        map.setView([userCoords.value.lat, userCoords.value.lng], Math.max(map.getZoom?.() ?? 14, 14), {
+            animate: true,
+        });
     }
 };
 
 onMounted(async () => {
     isClient.value = true;
     await nextTick();
+    if (!userCoords.value) {
+        try {
+            userCoords.value = await getBrowserCoords();
+        } catch {
+            userCoords.value = null;
+        }
+    }
+    await updateUserLocation();
     await updateMarkers();
 });
 
@@ -201,12 +318,24 @@ watch(
     { deep: true },
 );
 
+watch(
+    () => userCoords.value,
+    async () => {
+        if (!isClient.value) return;
+        await nextTick();
+        await updateUserLocation();
+        await updateMarkers();
+    },
+    { deep: true },
+);
+
 onBeforeUnmount(() => {
     if (map) {
         map.remove();
     }
     map = null;
-    markersLayer = null;
+    clusterLayer = null;
+    userLayer = null;
 });
 </script>
 
@@ -214,13 +343,6 @@ onBeforeUnmount(() => {
     <Head title="Explore" />
 
     <div class="mx-auto flex w-full max-w-md flex-col gap-6 px-4 py-6">
-        <div class="flex flex-col items-start justify-between gap-4">
-            <Heading
-                variant="small"
-                title="Explore Villa"
-                description="Cari villa dan buat booking harian"
-            />
-        </div>
 
         <div
             class="rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-card)] p-4"
@@ -246,21 +368,13 @@ onBeforeUnmount(() => {
                         @change="applyFilters"
                     >
                         <option value="latest">Terbaru</option>
+                        <option value="nearest">Lokasi terdekat</option>
                         <option value="name_asc">Nama A-Z</option>
                         <option value="name_desc">Nama Z-A</option>
                     </select>
                 </div>
 
                 <div class="flex items-center justify-between gap-3">
-                    <Label
-                        class="flex items-center gap-3 text-sm text-[color:var(--clay-body)]"
-                    >
-                        <Checkbox
-                            v-model:checked="form.with_photo"
-                            @update:checked="applyFilters"
-                        />
-                        <span>Hanya yang ada foto</span>
-                    </Label>
                     <Button
                         class="shrink-0"
                         variant="outline"

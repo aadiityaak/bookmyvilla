@@ -14,8 +14,9 @@ class ExploreController extends Controller
     {
         $filters = [
             'q' => $request->string('q')->toString(),
-            'with_photo' => $request->boolean('with_photo'),
             'sort' => $request->string('sort')->toString() ?: 'latest',
+            'user_lat' => $request->string('user_lat')->toString(),
+            'user_lng' => $request->string('user_lng')->toString(),
         ];
 
         $propertiesQuery = Property::query()
@@ -27,8 +28,7 @@ class ExploreController extends Controller
                         ->where('name', 'like', '%' . $term . '%')
                         ->orWhere('address', 'like', '%' . $term . '%');
                 });
-            })
-            ->when($filters['with_photo'], fn($q) => $q->whereNotNull('featured_image'));
+            });
 
         switch ($filters['sort']) {
             case 'name_asc':
@@ -36,6 +36,23 @@ class ExploreController extends Controller
                 break;
             case 'name_desc':
                 $propertiesQuery->orderByDesc('name');
+                break;
+            case 'nearest':
+                if (is_numeric($filters['user_lat']) && is_numeric($filters['user_lng'])) {
+                    $lat = (float) $filters['user_lat'];
+                    $lng = (float) $filters['user_lng'];
+
+                    $propertiesQuery
+                        ->orderByRaw('(latitude is null) asc')
+                        ->orderByRaw('(longitude is null) asc')
+                        ->orderByRaw(
+                            '(6371 * acos(cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude)))) asc',
+                            [$lat, $lng, $lat],
+                        )
+                        ->orderByDesc('id');
+                } else {
+                    $propertiesQuery->orderByDesc('id');
+                }
                 break;
             default:
                 $propertiesQuery->orderByDesc('id');
@@ -46,8 +63,9 @@ class ExploreController extends Controller
             ->paginate(12)
             ->appends(array_filter([
                 'q' => $filters['q'] ?: null,
-                'with_photo' => $filters['with_photo'] ? 1 : null,
                 'sort' => $filters['sort'] !== 'latest' ? $filters['sort'] : null,
+                'user_lat' => $filters['sort'] === 'nearest' && $filters['user_lat'] !== '' ? $filters['user_lat'] : null,
+                'user_lng' => $filters['sort'] === 'nearest' && $filters['user_lng'] !== '' ? $filters['user_lng'] : null,
             ], fn($value) => $value !== null && $value !== ''))
             ->through(fn(Property $property) => [
                 'id' => $property->id,
@@ -92,6 +110,8 @@ class ExploreController extends Controller
                 'name' => $property->name,
                 'featured_image' => $property->featured_image,
                 'address' => $property->address,
+                'latitude' => $property->latitude,
+                'longitude' => $property->longitude,
                 'description' => $property->description,
                 'gallery' => $property->gallery ?? [],
                 'status' => $property->status,
