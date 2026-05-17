@@ -39,14 +39,18 @@ const onScroll = () => {
     </SidebarInset>
     <main
         v-else
-        class="scroll-area mx-auto flex min-h-0 w-full flex-1 flex-col gap-4 overflow-y-auto rounded-lg"
+        class="scroll-area flex min-h-0 w-full flex-1 flex-col overflow-y-auto"
         :class="[
-            isMobileOnly ? 'max-w-md' : 'max-w-7xl',
             className,
             isScrolling ? 'scrolling' : '',
         ]"
         @scroll.passive="onScroll"
     >
-        <slot />
+        <div
+            class="mx-auto flex min-h-0 w-full flex-1 flex-col gap-4 rounded-lg"
+            :class="[isMobileOnly ? 'max-w-md' : 'max-w-7xl']"
+        >
+            <slot />
+        </div>
     </main>
 </template>

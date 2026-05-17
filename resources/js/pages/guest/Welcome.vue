@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, usePage } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { ArrowUpRight, ChevronLeft, ChevronRight } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 import { Button } from '@/components/ui/button';
@@ -175,6 +175,12 @@ type DragState = {
 
 type MouseDragState = Omit<DragState, 'pointerId'> & { el: HTMLElement | null };
 
+const lastDragAt = ref(0);
+const markDragged = () => {
+    lastDragAt.value = Date.now();
+};
+const wasJustDragged = () => Date.now() - lastDragAt.value < 250;
+
 const startMouseDrag = (e: MouseEvent, el: HTMLElement | null) => {
     if (!el) return;
     if (e.button !== 0) return;
@@ -193,10 +199,14 @@ const startMouseDrag = (e: MouseEvent, el: HTMLElement | null) => {
         if (!state.active || !state.el) return;
         const dx = ev.clientX - state.startX;
         state.el.scrollLeft = state.startScrollLeft - dx;
+        if (Math.abs(dx) > 8) {
+            markDragged();
+        }
     };
 
     const onUp = () => {
         state.active = false;
+        markDragged();
         window.removeEventListener('mousemove', onMove);
         window.removeEventListener('mouseup', onUp);
     };
@@ -223,6 +233,15 @@ const onCarouselWheel = (e: WheelEvent) => {
     const delta = isHorizontalIntent ? e.deltaX : e.deltaY;
     e.preventDefault();
     el.scrollLeft += delta;
+};
+
+const onCarouselItemClick = (href: string | null, e: MouseEvent) => {
+    if (!href) return;
+    if (wasJustDragged()) return;
+    if (e.target instanceof Element && e.target.closest('a,button,input,select,textarea,label')) {
+        return;
+    }
+    router.visit(href);
 };
 </script>
 
@@ -318,6 +337,8 @@ const onCarouselWheel = (e: WheelEvent) => {
                                     >
                                         <div
                                             class="relative w-full overflow-hidden rounded-xl border border-[color:var(--clay-hairline)]"
+                                            :class="s.href ? 'cursor-pointer' : ''"
+                                            @click="onCarouselItemClick(s.href, $event)"
                                         >
                                             <div
                                                 class="relative aspect-[16/9] sm:aspect-[4/3]"

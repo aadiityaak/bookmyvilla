@@ -95,7 +95,7 @@ const rightNavItems: NavItem[] = [
 <template>
     <div
         v-if="isPublicHeader"
-        class="fixed inset-x-0 top-0 z-50 border-b border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)]"
+        class="fixed inset-x-0 top-0 z-[2000] border-b border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)]"
     >
         <div class="mx-auto flex h-16 w-full max-w-md items-center justify-between px-6">
             <Link :href="logoHref" class="flex items-center gap-2">
