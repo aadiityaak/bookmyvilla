@@ -78,6 +78,22 @@ const galleryImages = computed(() => {
 
 const heroImage = computed(() => galleryImages.value[0] ?? null);
 
+const mainGalleryRef = ref<any>(null);
+const thumbsGalleryRef = ref<any>(null);
+
+const syncGallery = async () => {
+    await nextTick();
+
+    const main = (mainGalleryRef.value as any)?.splide ?? mainGalleryRef.value;
+    const thumbs = (thumbsGalleryRef.value as any)?.splide ?? thumbsGalleryRef.value;
+
+    if (!main || !thumbs || typeof main.sync !== 'function') {
+        return;
+    }
+
+    main.sync(thumbs);
+};
+
 const amenitiesList = computed(() => {
     const raw = props.property.amenities ?? '';
 
@@ -99,6 +115,42 @@ const form = useForm({
     check_out_date: '',
     guests_count: 1,
 });
+
+const quickNavRef = ref<HTMLDivElement | null>(null);
+
+const scrollToSection = (id: string) => {
+    if (!isClient.value) {
+        return;
+    }
+
+    const target = document.getElementById(id);
+    if (!target) {
+        return;
+    }
+
+    const navHeight = quickNavRef.value?.getBoundingClientRect().height ?? 0;
+    const extraOffset = 12;
+
+    const scrollArea = document.querySelector<HTMLElement>('.scroll-area');
+    if (scrollArea) {
+        const containerRect = scrollArea.getBoundingClientRect();
+        const targetRect = target.getBoundingClientRect();
+        const top =
+            scrollArea.scrollTop +
+            (targetRect.top - containerRect.top) -
+            navHeight -
+            extraOffset;
+
+        scrollArea.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+        window.history.replaceState(null, '', `#${id}`);
+
+        return;
+    }
+
+    const top = target.getBoundingClientRect().top + window.scrollY - navHeight - extraOffset;
+    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    window.history.replaceState(null, '', `#${id}`);
+};
 
 const submit = () => {
     form.post('/bookings', {
@@ -310,6 +362,16 @@ const fitMap = async () => {
 onMounted(async () => {
     isClient.value = true;
     await nextTick();
+
+    const initialHash = window.location.hash?.replace('#', '').trim();
+    if (initialHash) {
+        scrollToSection(initialHash);
+    }
+
+    if (galleryImages.value.length > 1) {
+        await syncGallery();
+    }
+
     await updatePropertyMarker();
 
     try {
@@ -375,41 +437,52 @@ onBeforeUnmount(() => {
                 </div>
             </div>
 
-            <div class="mt-5 flex items-center gap-2 overflow-x-auto pb-1">
-                <a
-                    href="#photos"
-                    class="shrink-0 rounded-full bg-[color:var(--clay-surface-soft)] px-3 py-1.5 text-sm text-[color:var(--clay-body)]"
+            <div class="-mx-4 mt-5">
+                <div
+                    ref="quickNavRef"
+                    class="sticky top-0 z-[1900] border-b border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)] px-4 py-2"
                 >
-                    <span class="inline-flex items-center gap-2">
-                        <Image class="h-4 w-4" />
-                        Foto
-                    </span>
-                </a>
-                <a
-                    href="#map"
-                    class="shrink-0 rounded-full bg-[color:var(--clay-surface-soft)] px-3 py-1.5 text-sm text-[color:var(--clay-body)]"
-                >
-                    <span class="inline-flex items-center gap-2">
-                        <MapPinned class="h-4 w-4" />
-                        Lokasi
-                    </span>
-                </a>
-                <a
-                    href="#booking"
-                    class="shrink-0 rounded-full bg-[color:var(--clay-surface-soft)] px-3 py-1.5 text-sm text-[color:var(--clay-body)]"
-                >
-                    <span class="inline-flex items-center gap-2">
-                        <CalendarDays class="h-4 w-4" />
-                        Booking
-                    </span>
-                </a>
+                    <div class="flex items-center gap-2 overflow-x-auto pb-1">
+                        <a
+                            href="#photos"
+                            class="shrink-0 rounded-full bg-[color:var(--clay-surface-soft)] px-3 py-1.5 text-sm text-[color:var(--clay-body)]"
+                            @click.prevent="scrollToSection('photos')"
+                        >
+                            <span class="inline-flex items-center gap-2">
+                                <Image class="h-4 w-4" />
+                                Foto
+                            </span>
+                        </a>
+                        <a
+                            href="#map"
+                            class="shrink-0 rounded-full bg-[color:var(--clay-surface-soft)] px-3 py-1.5 text-sm text-[color:var(--clay-body)]"
+                            @click.prevent="scrollToSection('map')"
+                        >
+                            <span class="inline-flex items-center gap-2">
+                                <MapPinned class="h-4 w-4" />
+                                Lokasi
+                            </span>
+                        </a>
+                        <a
+                            href="#booking"
+                            class="shrink-0 rounded-full bg-[color:var(--clay-surface-soft)] px-3 py-1.5 text-sm text-[color:var(--clay-body)]"
+                            @click.prevent="scrollToSection('booking')"
+                        >
+                            <span class="inline-flex items-center gap-2">
+                                <CalendarDays class="h-4 w-4" />
+                                Booking
+                            </span>
+                        </a>
+                    </div>
+                </div>
             </div>
 
-            <section id="photos" class="mt-6">
+            <section id="photos" class="mt-6 scroll-mt-24">
                 <div class="text-sm font-semibold">Foto</div>
                 <div class="mt-3">
                     <Splide
                         v-if="galleryImages.length"
+                        ref="mainGalleryRef"
                         :options="{
                             type: 'slide',
                             perPage: 1,
@@ -428,13 +501,40 @@ onBeforeUnmount(() => {
                             </div>
                         </SplideSlide>
                     </Splide>
+                    <Splide
+                        v-if="galleryImages.length > 1"
+                        ref="thumbsGalleryRef"
+                        class="mt-3 [&_.splide__slide:not(.is-active)_img]:opacity-60"
+                        :options="{
+                            type: 'slide',
+                            rewind: false,
+                            gap: '0.5rem',
+                            perPage: 5,
+                            pagination: false,
+                            arrows: false,
+                            isNavigation: true,
+                            focus: 'center',
+                            drag: true,
+                            fixedWidth: 78,
+                            fixedHeight: 52,
+                            breakpoints: {
+                                420: { perPage: 4, fixedWidth: 72, fixedHeight: 48 },
+                            },
+                        }"
+                    >
+                        <SplideSlide v-for="src in galleryImages" :key="`thumb-${src}`">
+                            <div class="thumb h-full w-full overflow-hidden rounded-xl bg-[color:var(--clay-surface-card)]">
+                                <img :src="src" alt="" class="h-full w-full object-cover" />
+                            </div>
+                        </SplideSlide>
+                    </Splide>
                     <div v-else class="rounded-2xl bg-[color:var(--clay-surface-soft)] p-5 text-sm text-[color:var(--clay-muted)]">
                         Belum ada foto.
                     </div>
                 </div>
             </section>
 
-            <section id="map" class="mt-7">
+            <section id="map" class="mt-7 scroll-mt-24">
                 <div class="text-sm font-semibold">Lokasi</div>
                 <div class="mt-3 overflow-hidden rounded-2xl bg-[color:var(--clay-surface-soft)]">
                     <div ref="mapEl" class="h-64 w-full" />
@@ -456,13 +556,14 @@ onBeforeUnmount(() => {
                 class="mt-7 border-t border-[color:var(--clay-hairline)] pt-6"
             >
                 <div class="text-sm font-semibold">Fasilitas</div>
-                <div class="mt-3 rounded-2xl bg-[color:var(--clay-surface-soft)] px-4 py-3">
-                    <ul class="space-y-2 text-sm text-[color:var(--clay-body)]">
-                        <li v-for="(item, idx) in amenitiesList" :key="idx" class="flex gap-2">
-                            <span class="text-[color:var(--primary)]">•</span>
-                            <span class="min-w-0 flex-1">{{ item }}</span>
-                        </li>
-                    </ul>
+                <div class="mt-3 flex flex-wrap gap-2">
+                    <span
+                        v-for="(item, idx) in amenitiesList"
+                        :key="idx"
+                        class="rounded-full border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-card)] px-3 py-1 text-xs text-[color:var(--clay-body)]"
+                    >
+                        {{ item }}
+                    </span>
                 </div>
             </section>
 
@@ -487,7 +588,7 @@ onBeforeUnmount(() => {
                 </div>
             </section>
 
-            <section id="booking" class="mt-7 border-t border-[color:var(--clay-hairline)] pt-6">
+            <section id="booking" class="mt-7 scroll-mt-24 border-t border-[color:var(--clay-hairline)] pt-6">
                 <div class="text-sm font-semibold">Booking</div>
                 <div v-if="!canBook" class="mt-3 text-sm text-[color:var(--clay-muted)]">
                     Login sebagai tenant untuk membuat booking.

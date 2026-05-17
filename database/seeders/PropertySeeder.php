@@ -49,6 +49,72 @@ class PropertySeeder extends Seeder
     $types = ['kost', 'villa'];
     $statuses = ['draft', 'published', 'archived'];
 
+    $amenitiesCatalog = [
+      'common' => [
+        'Wifi',
+        'Parkir motor',
+        'Parkir mobil',
+        'Air panas',
+        'TV',
+        'Dapur',
+        'Dispenser',
+        'Area merokok',
+        'Layanan kebersihan',
+        'Keamanan 24 jam',
+        'CCTV',
+        'Akses kartu/kunci',
+        'Kamar mandi',
+        'Kamar mandi dalam',
+        'Kamar mandi luar',
+        'Mushola',
+        'Ruang tamu',
+        'Rooftop',
+        'Taman',
+        'Balkon/teras',
+        'Pemandangan',
+      ],
+      'kost' => [
+        'AC',
+        'Kipas angin',
+        'Kasur',
+        'Lemari',
+        'Meja belajar',
+        'Kursi',
+        'Laundry',
+        'Dapur bersama',
+        'Kulkas bersama',
+        'Kompor bersama',
+        'Termasuk listrik',
+        'Termasuk air',
+        'Pet friendly',
+        'Khusus putra',
+        'Khusus putri',
+        'Pasangan menikah',
+      ],
+      'villa' => [
+        'Kolam renang',
+        'Kolam renang pribadi',
+        'BBQ grill',
+        'Sarapan',
+        'Dapur lengkap',
+        'Chef on request',
+        'Smart TV',
+        'Netflix',
+        'Sound system',
+        'Bathtub',
+        'Gym',
+        'Playground',
+        'Meja biliar',
+        'Pingpong',
+        'Karaoke',
+        'View laut',
+        'View gunung',
+        'Akses pantai',
+        'Taman luas',
+        'Area api unggun',
+      ],
+    ];
+
     for ($i = 0; $i < 80; $i++) {
       if ($i < 12) {
         $type = 'villa';
@@ -86,12 +152,20 @@ class PropertySeeder extends Seeder
         : null;
 
       $amenities = null;
-      if ($hasAmenities && $faker->boolean(70)) {
-        $items = $faker->randomElements(
-          ['Wifi', 'AC', 'Kolam renang', 'Parkir', 'Dapur', 'TV', 'Air panas', 'Sarapan', 'Keamanan 24 jam', 'View laut'],
-          $faker->numberBetween(3, 7),
-        );
-        $amenities = implode("\n", $items);
+      if ($hasAmenities) {
+        $chance = $status === 'published' ? 92 : 55;
+        if ($faker->boolean($chance)) {
+          $pool = array_values(array_unique(array_merge(
+            $amenitiesCatalog['common'],
+            $amenitiesCatalog[$type] ?? [],
+          )));
+
+          $countMin = $type === 'villa' ? 6 : 5;
+          $countMax = $type === 'villa' ? 12 : 10;
+          $count = min(count($pool), $faker->numberBetween($countMin, $countMax));
+          $items = $faker->randomElements($pool, $count);
+          $amenities = implode("\n", $items);
+        }
       }
 
       $payload = [
