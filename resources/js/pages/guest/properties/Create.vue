@@ -652,10 +652,10 @@ const submit = () => {
                             v-model="form.amenities"
                             class="clay-textarea"
                             rows="6"
-                            placeholder="+ Wifi&#10;+ AC&#10;+ Kolam renang"
+                            placeholder="Wifi&#10;AC&#10;Kolam renang"
                         />
                         <div class="text-xs text-[color:var(--clay-muted)]">
-                            Tulis per baris dengan awalan tanda +.
+                            Pisahkan dengan enter.
                         </div>
                         <InputError :message="form.errors.amenities" />
                     </div>

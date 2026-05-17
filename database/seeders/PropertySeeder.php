@@ -44,6 +44,7 @@ class PropertySeeder extends Seeder
     $hasRegencyId = Schema::hasColumn('properties', 'regency_id');
     $hasLatitude = Schema::hasColumn('properties', 'latitude');
     $hasLongitude = Schema::hasColumn('properties', 'longitude');
+    $hasAmenities = Schema::hasColumn('properties', 'amenities');
 
     $types = ['kost', 'villa'];
     $statuses = ['draft', 'published', 'archived'];
@@ -84,6 +85,15 @@ class PropertySeeder extends Seeder
         ? '<p>' . implode('</p><p>', $descriptionParagraphs) . '</p>'
         : null;
 
+      $amenities = null;
+      if ($hasAmenities && $faker->boolean(70)) {
+        $items = $faker->randomElements(
+          ['Wifi', 'AC', 'Kolam renang', 'Parkir', 'Dapur', 'TV', 'Air panas', 'Sarapan', 'Keamanan 24 jam', 'View laut'],
+          $faker->numberBetween(3, 7),
+        );
+        $amenities = implode("\n", $items);
+      }
+
       $payload = [
         'owner_id' => $ownerIds[array_rand($ownerIds)],
         'investor_id' => count($investorIds)
@@ -96,6 +106,7 @@ class PropertySeeder extends Seeder
         ),
         'address' => $faker->optional(0.9)->address(),
         'description' => $description,
+        'amenities' => $amenities,
         'status' => $status,
         'gallery' => $galleryCount ? $gallery : null,
       ];

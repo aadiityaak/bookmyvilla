@@ -459,7 +459,7 @@ onBeforeUnmount(() => {
                 <div class="mt-3 rounded-2xl bg-[color:var(--clay-surface-soft)] px-4 py-3">
                     <ul class="space-y-2 text-sm text-[color:var(--clay-body)]">
                         <li v-for="(item, idx) in amenitiesList" :key="idx" class="flex gap-2">
-                            <span class="text-[color:var(--primary)]">+</span>
+                            <span class="text-[color:var(--primary)]">•</span>
                             <span class="min-w-0 flex-1">{{ item }}</span>
                         </li>
                     </ul>
