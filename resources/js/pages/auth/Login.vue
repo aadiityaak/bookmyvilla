@@ -27,15 +27,6 @@ defineProps<{
             {{ status }}
         </div>
 
-        <div class="mb-6">
-            <div class="text-xl font-semibold tracking-tight text-[color:var(--clay-ink)]">
-                Masuk
-            </div>
-            <div class="mt-1 text-sm text-[color:var(--clay-muted)]">
-                Gunakan email dan password untuk melanjutkan
-            </div>
-        </div>
-
         <div class="rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-card)] p-4">
             <Form
                 v-bind="store.form()"

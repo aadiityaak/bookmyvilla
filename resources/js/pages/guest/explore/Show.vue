@@ -393,12 +393,6 @@ onBeforeUnmount(() => {
                         </Button>
                     </form>
                 </div>
-
-                <div
-                    class="mt-6 rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)] p-5 text-sm text-[color:var(--clay-muted)]"
-                >
-                    Status booking awal: pending_payment (sementara, sebelum integrasi pembayaran).
-                </div>
             </div>
         </div>
     </div>
