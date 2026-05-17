@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { Splide, SplideSlide } from '@splidejs/vue-splide';
+import { CalendarDays, MapPinned, Photo, Users } from 'lucide-vue-next';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
-import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -53,8 +53,15 @@ const role = computed(() => (page.props.auth?.user as any)?.role);
 const canBook = computed(() => role.value === 'tenant');
 
 const imageUrl = (path: string | null) => {
-    if (!path) return null;
-    return path.startsWith('http') ? path : `/storage/${path}`;
+    if (!path) {
+        return null;
+    }
+
+    if (path.startsWith('http')) {
+        return path;
+    }
+
+    return `/storage/${path}`;
 };
 
 const galleryImages = computed(() => {
@@ -64,11 +71,11 @@ const galleryImages = computed(() => {
     ].filter(Boolean) as string[];
 
     const normalized = images.map((p) => imageUrl(p) ?? '').filter(Boolean);
+
     return Array.from(new Set(normalized));
 });
 
 const heroImage = computed(() => galleryImages.value[0] ?? null);
-const carouselImages = computed(() => galleryImages.value.slice(1));
 
 const form = useForm({
     property_id: props.property.id,
@@ -95,6 +102,7 @@ const getBrowserCoords = () => {
     return new Promise<{ lat: number; lng: number; accuracy: number | null }>((resolve, reject) => {
         if (!('geolocation' in navigator)) {
             reject(new Error('geolocation_not_supported'));
+
             return;
         }
 
@@ -112,14 +120,39 @@ const getBrowserCoords = () => {
 };
 
 const isValidLatLng = (lat: number | null, lng: number | null) => {
-    if (lat === null || lng === null) return false;
+    if (lat === null || lng === null) {
+        return false;
+    }
+
     return lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
 };
 
+const getCssVarColor = (name: string, fallback: string) => {
+    if (typeof window === 'undefined') {
+        return fallback;
+    }
+
+    const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+    if (!value) {
+        return fallback;
+    }
+
+    return value;
+};
+
 const ensureMap = async () => {
-    if (typeof window === 'undefined') return;
-    if (!mapEl.value) return;
-    if (map) return;
+    if (typeof window === 'undefined') {
+        return;
+    }
+
+    if (!mapEl.value) {
+        return;
+    }
+
+    if (map) {
+        return;
+    }
 
     const leafletModule = await import('leaflet');
     const L: any = (leafletModule as any).default ?? leafletModule;
@@ -157,15 +190,22 @@ const ensureMap = async () => {
 
 const updatePropertyMarker = async () => {
     await ensureMap();
-    if (!map || !propertyLayer || !(window as any).__leaflet) return;
+
+    if (!map || !propertyLayer || !(window as any).__leaflet) {
+        return;
+    }
 
     const L = (window as any).__leaflet;
     propertyLayer.clearLayers();
 
-    if (!isValidLatLng(props.property.latitude, props.property.longitude)) return;
+    if (!isValidLatLng(props.property.latitude, props.property.longitude)) {
+        return;
+    }
+
     const lat = props.property.latitude as number;
     const lng = props.property.longitude as number;
 
+    const primary = getCssVarColor('--primary', '#0a0a0a');
     const popupHtml = `
         <div>
             <div style="font-weight: 600; margin-bottom: 2px;">${props.property.name}</div>
@@ -173,38 +213,55 @@ const updatePropertyMarker = async () => {
         </div>
     `.trim();
 
-    L.marker([lat, lng]).addTo(propertyLayer).bindPopup(popupHtml);
+    L.circleMarker([lat, lng], {
+        radius: 8,
+        color: primary,
+        weight: 2,
+        fillColor: primary,
+        fillOpacity: 0.9,
+    })
+        .addTo(propertyLayer)
+        .bindPopup(popupHtml);
 };
 
 const updateUserLocation = async () => {
     await ensureMap();
-    if (!map || !userLayer || !(window as any).__leaflet) return;
+
+    if (!map || !userLayer || !(window as any).__leaflet) {
+        return;
+    }
 
     const L = (window as any).__leaflet;
     userLayer.clearLayers();
 
-    if (!userCoords.value) return;
-    if (!isValidLatLng(userCoords.value.lat, userCoords.value.lng)) return;
+    if (!userCoords.value) {
+        return;
+    }
+
+    if (!isValidLatLng(userCoords.value.lat, userCoords.value.lng)) {
+        return;
+    }
 
     const lat = userCoords.value.lat;
     const lng = userCoords.value.lng;
     const accuracy = userCoords.value.accuracy;
+    const primary = getCssVarColor('--primary', '#0a0a0a');
 
     if (typeof accuracy === 'number' && accuracy > 0) {
         L.circle([lat, lng], {
             radius: accuracy,
-            color: '#2563eb',
+            color: primary,
             weight: 1,
-            fillColor: '#3b82f6',
+            fillColor: primary,
             fillOpacity: 0.12,
         }).addTo(userLayer);
     }
 
     L.circleMarker([lat, lng], {
         radius: 7,
-        color: '#1d4ed8',
+        color: primary,
         weight: 2,
-        fillColor: '#3b82f6',
+        fillColor: primary,
         fillOpacity: 0.9,
     })
         .addTo(userLayer)
@@ -213,7 +270,10 @@ const updateUserLocation = async () => {
 
 const fitMap = async () => {
     await ensureMap();
-    if (!map || !(window as any).__leaflet) return;
+
+    if (!map || !(window as any).__leaflet) {
+        return;
+    }
 
     const L = (window as any).__leaflet;
     const bounds = L.latLngBounds([]);
@@ -221,6 +281,7 @@ const fitMap = async () => {
     if (isValidLatLng(props.property.latitude, props.property.longitude)) {
         bounds.extend([props.property.latitude as number, props.property.longitude as number]);
     }
+
     if (userCoords.value && isValidLatLng(userCoords.value.lat, userCoords.value.lng)) {
         bounds.extend([userCoords.value.lat, userCoords.value.lng]);
     }
@@ -249,6 +310,7 @@ onBeforeUnmount(() => {
     if (map) {
         map.remove();
     }
+
     map = null;
     propertyLayer = null;
     userLayer = null;
@@ -258,42 +320,80 @@ onBeforeUnmount(() => {
 <template>
     <Head :title="property.name" />
 
-    <div class="mx-auto flex w-full max-w-md flex-col gap-8 px-6 py-8">
-        <div class="grid grid-cols-1 gap-6">
-            <div>
-                <div class="overflow-hidden rounded-xl border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-card)]">
-                    <div class="relative aspect-[16/9] w-full">
-                        <img
-                            v-if="heroImage"
-                            :src="heroImage"
-                            alt=""
-                            class="absolute inset-0 h-full w-full object-cover"
-                        />
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
-                        <div class="absolute inset-0 flex flex-col justify-between p-4">
-                            <div class="flex items-start justify-between gap-3">
-                                <Button size="sm" variant="outline" class="bg-white/10 text-white hover:bg-white/20 hover:text-white border-white/25" as-child>
-                                    <Link href="/explore">Kembali</Link>
-                                </Button>
+    <div class="min-h-dvh bg-[color:var(--clay-canvas)] text-[color:var(--clay-ink)]">
+        <div class="mx-auto w-full max-w-md px-4 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-6">
+            <div class="relative overflow-hidden rounded-2xl bg-[color:var(--clay-surface-card)]">
+                <div class="relative aspect-[16/10] w-full">
+                    <img
+                        v-if="heroImage"
+                        :src="heroImage"
+                        alt=""
+                        class="absolute inset-0 h-full w-full object-cover"
+                    />
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/65 via-black/20 to-transparent" />
+                    <div class="absolute inset-0 flex flex-col justify-between p-4">
+                        <div class="flex items-start justify-between gap-3">
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                class="border-white/25 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+                                as-child
+                            >
+                                <Link href="/explore">Kembali</Link>
+                            </Button>
+                            <div
+                                class="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur-sm"
+                            >
+                                {{ property.type === 'kost' ? 'Kost' : 'Villa' }}
                             </div>
-                            <div class="min-w-0">
-                                <div class="truncate text-lg font-semibold text-white">
-                                    {{ property.name }}
-                                </div>
-                                <div class="mt-1 truncate text-sm text-white/80">
-                                    {{ property.address ?? '—' }}
-                                </div>
+                        </div>
+                        <div class="min-w-0">
+                            <div class="truncate text-lg font-semibold tracking-tight text-white">
+                                {{ property.name }}
+                            </div>
+                            <div class="mt-1 truncate text-sm text-white/80">
+                                {{ property.address ?? '—' }}
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <div
-                    v-if="carouselImages.length"
-                    class="mt-6 overflow-hidden rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)]"
+            <div class="mt-5 flex items-center gap-2 overflow-x-auto pb-1">
+                <a
+                    href="#photos"
+                    class="shrink-0 rounded-full bg-[color:var(--clay-surface-soft)] px-3 py-1.5 text-sm text-[color:var(--clay-body)]"
                 >
+                    <span class="inline-flex items-center gap-2">
+                        <Photo class="h-4 w-4" />
+                        Foto
+                    </span>
+                </a>
+                <a
+                    href="#map"
+                    class="shrink-0 rounded-full bg-[color:var(--clay-surface-soft)] px-3 py-1.5 text-sm text-[color:var(--clay-body)]"
+                >
+                    <span class="inline-flex items-center gap-2">
+                        <MapPinned class="h-4 w-4" />
+                        Lokasi
+                    </span>
+                </a>
+                <a
+                    href="#booking"
+                    class="shrink-0 rounded-full bg-[color:var(--clay-surface-soft)] px-3 py-1.5 text-sm text-[color:var(--clay-body)]"
+                >
+                    <span class="inline-flex items-center gap-2">
+                        <CalendarDays class="h-4 w-4" />
+                        Booking
+                    </span>
+                </a>
+            </div>
+
+            <section id="photos" class="mt-6">
+                <div class="text-sm font-semibold">Foto</div>
+                <div class="mt-3">
                     <Splide
-                        class="p-4"
+                        v-if="galleryImages.length"
                         :options="{
                             type: 'slide',
                             perPage: 1,
@@ -304,113 +404,119 @@ onBeforeUnmount(() => {
                             speed: 450,
                         }"
                     >
-                        <SplideSlide v-for="src in carouselImages" :key="src">
-                            <div class="overflow-hidden rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-card)]">
-                                <div class="aspect-[16/9] w-full overflow-hidden">
+                        <SplideSlide v-for="src in galleryImages" :key="src">
+                            <div class="overflow-hidden rounded-2xl bg-[color:var(--clay-surface-card)]">
+                                <div class="aspect-[16/10] w-full overflow-hidden">
                                     <img :src="src" alt="" class="h-full w-full object-cover" />
                                 </div>
                             </div>
                         </SplideSlide>
                     </Splide>
+                    <div v-else class="rounded-2xl bg-[color:var(--clay-surface-soft)] p-5 text-sm text-[color:var(--clay-muted)]">
+                        Belum ada foto.
+                    </div>
                 </div>
+            </section>
 
-                <div
-                    class="mt-6 overflow-hidden rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)]"
-                >
+            <section id="map" class="mt-7">
+                <div class="text-sm font-semibold">Lokasi</div>
+                <div class="mt-3 overflow-hidden rounded-2xl bg-[color:var(--clay-surface-soft)]">
                     <div ref="mapEl" class="h-64 w-full" />
                 </div>
+            </section>
 
+            <section class="mt-7 border-t border-[color:var(--clay-hairline)] pt-6">
+                <div class="text-sm font-semibold">Deskripsi</div>
                 <div
-                    class="mt-6 rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)] p-5"
-                >
-                    <Heading variant="small" title="Description" />
+                    v-if="property.description"
+                    class="prose prose-sm mt-3 max-w-none text-[color:var(--clay-body)]"
+                    v-html="property.description"
+                />
+                <div v-else class="mt-3 text-sm text-[color:var(--clay-muted)]">Belum ada deskripsi.</div>
+            </section>
+
+            <section
+                v-if="blocked.length"
+                class="mt-7 border-t border-[color:var(--clay-hairline)] pt-6"
+            >
+                <div class="text-sm font-semibold">Tanggal terisi</div>
+                <div class="mt-3 divide-y divide-[color:var(--clay-hairline)] rounded-2xl bg-[color:var(--clay-surface-soft)]">
                     <div
-                        v-if="property.description"
-                        class="prose prose-sm mt-3 max-w-none text-[color:var(--clay-body)]"
-                        v-html="property.description"
-                    />
-                    <div
-                        v-else
-                        class="mt-3 text-sm text-[color:var(--clay-muted)]"
+                        v-for="(b, idx) in blocked"
+                        :key="idx"
+                        class="flex items-start justify-between gap-3 px-4 py-3 text-sm"
                     >
-                        No description.
-                    </div>
-                </div>
-
-                <div
-                    v-if="blocked.length"
-                    class="mt-6 rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)] p-5"
-                >
-                    <div class="text-sm font-medium text-[color:var(--clay-ink)]">
-                        Booked Dates
-                    </div>
-                    <div class="mt-3 space-y-2 text-sm text-[color:var(--clay-body)]">
-                        <div
-                            v-for="(b, idx) in blocked"
-                            :key="idx"
-                            class="flex items-center justify-between rounded-md border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-card)] px-3 py-2"
-                        >
-                            <div>{{ b.check_in_date }} → {{ b.check_out_date }}</div>
-                            <div class="text-xs text-[color:var(--clay-muted)]">
-                                {{ b.status }}
-                            </div>
+                        <div class="text-[color:var(--clay-body)]">
+                            {{ b.check_in_date }} → {{ b.check_out_date }}
+                        </div>
+                        <div class="text-xs text-[color:var(--clay-muted)]">
+                            {{ b.status }}
                         </div>
                     </div>
                 </div>
-            </div>
+            </section>
 
-            <div>
-                <div
-                    class="rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-card)] p-5"
-                >
-                    <div class="text-sm font-medium text-[color:var(--clay-ink)]">
-                        Booking
+            <section id="booking" class="mt-7 border-t border-[color:var(--clay-hairline)] pt-6">
+                <div class="text-sm font-semibold">Booking</div>
+                <div v-if="!canBook" class="mt-3 text-sm text-[color:var(--clay-muted)]">
+                    Login sebagai tenant untuk membuat booking.
+                </div>
+
+                <form v-else class="mt-4 space-y-4" @submit.prevent="submit">
+                    <div>
+                        <Label for="check_in_date">Check-in</Label>
+                        <Input id="check_in_date" v-model="form.check_in_date" class="clay-control rounded-xl" type="date" />
+                        <InputError :message="form.errors.check_in_date" />
                     </div>
 
-                    <div v-if="!canBook" class="mt-3 text-sm text-[color:var(--clay-muted)]">
-                        Login sebagai tenant untuk membuat booking.
+                    <div>
+                        <Label for="check_out_date">Check-out</Label>
+                        <Input id="check_out_date" v-model="form.check_out_date" class="clay-control rounded-xl" type="date" />
+                        <InputError :message="form.errors.check_out_date" />
                     </div>
 
-                    <form v-else class="mt-4 space-y-4" @submit.prevent="submit">
-                        <div>
-                            <Label for="check_in_date">Check-in</Label>
-                            <Input
-                                id="check_in_date"
-                                v-model="form.check_in_date"
-                                class="clay-control"
-                                type="date"
-                            />
-                            <InputError :message="form.errors.check_in_date" />
-                        </div>
-
-                        <div>
-                            <Label for="check_out_date">Check-out</Label>
-                            <Input
-                                id="check_out_date"
-                                v-model="form.check_out_date"
-                                class="clay-control"
-                                type="date"
-                            />
-                            <InputError :message="form.errors.check_out_date" />
-                        </div>
-
-                        <div>
-                            <Label for="guests_count">Guests</Label>
+                    <div>
+                        <Label for="guests_count">Tamu</Label>
+                        <div class="relative">
+                            <Users class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--clay-muted)]" />
                             <Input
                                 id="guests_count"
                                 v-model="form.guests_count"
-                                class="clay-control"
+                                class="clay-control rounded-xl pl-9"
                                 type="number"
                                 min="1"
                                 max="30"
                             />
-                            <InputError :message="form.errors.guests_count" />
                         </div>
+                        <InputError :message="form.errors.guests_count" />
+                    </div>
+                </form>
+            </section>
+        </div>
 
-                        <Button class="w-full" type="submit" :disabled="form.processing">
-                            Create booking
-                        </Button>
-                    </form>
+        <div
+            class="fixed inset-x-0 bottom-0 z-50 border-t border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)]"
+        >
+            <div class="mx-auto w-full max-w-md px-4 pb-[env(safe-area-inset-bottom)] pt-3">
+                <div class="flex items-center justify-between gap-3">
+                    <div class="min-w-0">
+                        <div class="truncate text-sm font-semibold">{{ property.name }}</div>
+                        <div class="mt-0.5 truncate text-xs text-[color:var(--clay-muted)]">
+                            {{ property.address ?? '—' }}
+                        </div>
+                    </div>
+                    <Button
+                        v-if="canBook"
+                        class="shrink-0"
+                        type="button"
+                        :disabled="form.processing"
+                        @click="submit"
+                    >
+                        Create booking
+                    </Button>
+                    <Button v-else variant="outline" class="shrink-0" as-child>
+                        <Link href="/login">Masuk</Link>
+                    </Button>
                 </div>
             </div>
         </div>
