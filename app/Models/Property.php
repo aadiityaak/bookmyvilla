@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'latitude',
     'longitude',
     'description',
+    'amenities',
     'status',
     'gallery',
 ])]

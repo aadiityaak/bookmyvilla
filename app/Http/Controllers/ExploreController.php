@@ -113,6 +113,7 @@ class ExploreController extends Controller
                 'latitude' => $property->latitude,
                 'longitude' => $property->longitude,
                 'description' => $property->description,
+                'amenities' => $property->amenities,
                 'gallery' => $property->gallery ?? [],
                 'status' => $property->status,
             ],

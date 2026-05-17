@@ -114,6 +114,7 @@ class PropertyController extends Controller
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'description' => ['nullable', 'string'],
+            'amenities' => ['nullable', 'string', 'max:5000'],
             'status' => ['required', 'string', Rule::in(['draft', 'published', 'archived'])],
             'gallery_existing' => ['nullable', 'array'],
             'gallery_existing.*' => ['nullable', 'string', 'max:2048'],
@@ -154,6 +155,7 @@ class PropertyController extends Controller
             'latitude' => $validated['latitude'] ?? null,
             'longitude' => $validated['longitude'] ?? null,
             'description' => $this->sanitizeRichText($validated['description'] ?? null),
+            'amenities' => $validated['amenities'] ?? null,
             'status' => $validated['status'],
             'gallery' => $gallery,
         ]);
@@ -200,6 +202,7 @@ class PropertyController extends Controller
                 'latitude' => $property->latitude,
                 'longitude' => $property->longitude,
                 'description' => $property->description,
+                'amenities' => $property->amenities,
                 'status' => $property->status,
                 'gallery' => $property->gallery ?? [],
                 'created_at' => optional($property->created_at)?->toISOString(),
@@ -236,6 +239,7 @@ class PropertyController extends Controller
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'description' => ['nullable', 'string'],
+            'amenities' => ['nullable', 'string', 'max:5000'],
             'status' => ['required', 'string', Rule::in(['draft', 'published', 'archived'])],
             'gallery_existing' => ['nullable', 'array'],
             'gallery_existing.*' => ['nullable', 'string', 'max:2048'],
@@ -283,6 +287,7 @@ class PropertyController extends Controller
             'latitude' => $validated['latitude'] ?? null,
             'longitude' => $validated['longitude'] ?? null,
             'description' => $this->sanitizeRichText($validated['description'] ?? null),
+            'amenities' => $validated['amenities'] ?? null,
             'status' => $validated['status'],
             'gallery' => $gallery,
         ]);
@@ -333,4 +338,3 @@ class PropertyController extends Controller
         Storage::disk('public')->delete($path);
     }
 }
-

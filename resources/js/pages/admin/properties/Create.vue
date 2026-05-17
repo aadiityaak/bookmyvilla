@@ -188,6 +188,7 @@ const form = useForm({
     latitude: '',
     longitude: '',
     description: '',
+    amenities: '',
     status: 'draft',
     gallery_files: [] as File[],
 });
@@ -641,6 +642,21 @@ const submit = () => {
                     </div>
 
                     <div class="grid gap-2">
+                        <Label for="amenities">Fasilitas</Label>
+                        <textarea
+                            id="amenities"
+                            v-model="form.amenities"
+                            class="clay-textarea"
+                            rows="6"
+                            placeholder="+ Wifi&#10;+ AC&#10;+ Kolam renang"
+                        />
+                        <div class="text-xs text-[color:var(--clay-muted)]">
+                            Tulis per baris dengan awalan tanda +.
+                        </div>
+                        <InputError :message="form.errors.amenities" />
+                    </div>
+
+                    <div class="grid gap-2">
                         <div class="flex items-center justify-between gap-3">
                             <Label>Gallery</Label>
                         </div>
@@ -723,4 +739,3 @@ const submit = () => {
         </div>
     </div>
 </template>
-

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { Splide, SplideSlide } from '@splidejs/vue-splide';
-import { CalendarDays, MapPinned, Photo, Users } from 'lucide-vue-next';
+import { CalendarDays, Image, MapPinned, Users } from 'lucide-vue-next';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ type PropertyDetail = {
     latitude: number | null;
     longitude: number | null;
     description: string | null;
+    amenities: string | null;
     gallery: string[];
     status: string;
 };
@@ -76,6 +77,21 @@ const galleryImages = computed(() => {
 });
 
 const heroImage = computed(() => galleryImages.value[0] ?? null);
+
+const amenitiesList = computed(() => {
+    const raw = props.property.amenities ?? '';
+
+    if (!raw.trim()) {
+        return [];
+    }
+
+    return raw
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .map((line) => line.replace(/^[+\-•]\s*/, '').trim())
+        .filter(Boolean);
+});
 
 const form = useForm({
     property_id: props.property.id,
@@ -365,7 +381,7 @@ onBeforeUnmount(() => {
                     class="shrink-0 rounded-full bg-[color:var(--clay-surface-soft)] px-3 py-1.5 text-sm text-[color:var(--clay-body)]"
                 >
                     <span class="inline-flex items-center gap-2">
-                        <Photo class="h-4 w-4" />
+                        <Image class="h-4 w-4" />
                         Foto
                     </span>
                 </a>
@@ -433,6 +449,21 @@ onBeforeUnmount(() => {
                     v-html="property.description"
                 />
                 <div v-else class="mt-3 text-sm text-[color:var(--clay-muted)]">Belum ada deskripsi.</div>
+            </section>
+
+            <section
+                v-if="amenitiesList.length"
+                class="mt-7 border-t border-[color:var(--clay-hairline)] pt-6"
+            >
+                <div class="text-sm font-semibold">Fasilitas</div>
+                <div class="mt-3 rounded-2xl bg-[color:var(--clay-surface-soft)] px-4 py-3">
+                    <ul class="space-y-2 text-sm text-[color:var(--clay-body)]">
+                        <li v-for="(item, idx) in amenitiesList" :key="idx" class="flex gap-2">
+                            <span class="text-[color:var(--primary)]">+</span>
+                            <span class="min-w-0 flex-1">{{ item }}</span>
+                        </li>
+                    </ul>
+                </div>
             </section>
 
             <section

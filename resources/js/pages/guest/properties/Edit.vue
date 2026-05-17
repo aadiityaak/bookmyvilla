@@ -21,6 +21,7 @@ type PropertyData = {
     latitude: number | null;
     longitude: number | null;
     description: string | null;
+    amenities: string | null;
     status: string;
     gallery: string[];
     featured_image: string | null;
@@ -205,6 +206,7 @@ const form = useForm({
     latitude: props.property.latitude !== null ? String(props.property.latitude) : '',
     longitude: props.property.longitude !== null ? String(props.property.longitude) : '',
     description: props.property.description ?? '',
+    amenities: props.property.amenities ?? '',
     status: props.property.status,
     featured_image_remove: false as boolean,
     featured_image_file: null as File | null,
@@ -729,6 +731,21 @@ const destroy = () => {
                                 </div>
                             </div>
                             <InputError :message="form.errors.description" />
+                        </div>
+
+                        <div class="grid gap-2">
+                            <Label for="amenities">Fasilitas</Label>
+                            <textarea
+                                id="amenities"
+                                v-model="form.amenities"
+                                class="clay-textarea"
+                                rows="6"
+                                placeholder="+ Wifi&#10;+ AC&#10;+ Kolam renang"
+                            />
+                            <div class="text-xs text-[color:var(--clay-muted)]">
+                                Tulis per baris dengan awalan tanda +.
+                            </div>
+                            <InputError :message="form.errors.amenities" />
                         </div>
 
                         <div class="grid gap-2">

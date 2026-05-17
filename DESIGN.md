@@ -572,6 +572,10 @@ The system uses no heavy shadows. Depth comes from the saturated color contrast 
   - Surface: `--clay-canvas`, `--clay-surface-card`, `--clay-surface-soft`, `--clay-hairline`
   - Teks: `--clay-ink`, `--clay-body`, `--clay-muted`
   - Brand: `--primary` (utama), `--clay-brand-pink` (aksen)
+- **Jangan “card overload”:** hindari halaman yang isinya kotak-kotak border semua. Utamakan layout halus dengan:
+  - separator hairline (`--clay-hairline`) untuk pemisah antar item/section,
+  - panel soft (`--clay-surface-soft`) untuk area khusus (map/highlight),
+  - card penuh hanya untuk konten yang memang “featured” (hero/banner/carousel).
 - **Brand settings override:** `primary_color` & `secondary_color` dari Setting Branding memetakan ke token di UI:
   - `primary_color` → `--primary` (juga dipakai untuk ring/sidebar/CTA)
   - `secondary_color` → `--clay-brand-pink` (aksen/highlight)
