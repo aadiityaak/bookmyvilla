@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { Splide, SplideSlide } from '@splidejs/vue-splide';
-import { ArrowUpRight, ChevronLeft, ChevronRight } from 'lucide-vue-next';
+import { ArrowUpRight, Building2, CalendarDays, ChevronLeft, ChevronRight, MapPinned, Search } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 import { Button } from '@/components/ui/button';
 import { dashboard, login, register } from '@/routes';
@@ -33,22 +33,42 @@ const props = withDefaults(
 );
 
 const page = usePage();
+const branding = computed(() => (page.props as any)?.branding ?? null);
+const appName = computed(() => branding.value?.app_name ?? (page.props as any)?.name ?? 'BookMyVilla');
+const tagline = computed(() => branding.value?.tagline ?? 'Booking villa harian, tanpa ribet.');
 const user = computed(() => (page.props as any)?.auth?.user ?? null);
 const role = computed(() => user.value?.role ?? null);
+const greetingName = computed(() => user.value?.name ?? appName.value);
 
 const primaryCtaHref = computed(() => {
-    if (!user.value) return '/explore';
-    if (role.value === 'tenant') return '/bookings';
-    if (role.value === 'host' || role.value === 'investor' || role.value === 'admin')
+    if (!user.value) {
+        return '/explore';
+    }
+
+    if (role.value === 'tenant') {
+        return '/bookings';
+    }
+
+    if (role.value === 'host' || role.value === 'investor' || role.value === 'admin') {
         return '/properties';
+    }
+
     return dashboard();
 });
 
 const primaryCtaLabel = computed(() => {
-    if (!user.value) return 'Explore Villa';
-    if (role.value === 'tenant') return 'Booking Saya';
-    if (role.value === 'host' || role.value === 'investor' || role.value === 'admin')
+    if (!user.value) {
+        return 'Explore Villa';
+    }
+
+    if (role.value === 'tenant') {
+        return 'Booking Saya';
+    }
+
+    if (role.value === 'host' || role.value === 'investor' || role.value === 'admin') {
         return 'Kelola Property';
+    }
+
     return 'Dashboard';
 });
 
@@ -63,8 +83,14 @@ type CarouselItem = {
 };
 
 const toImageUrl = (path: string | null) => {
-    if (!path) return null;
-    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    if (!path) {
+        return null;
+    }
+
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+        return path;
+    }
+
     return `/storage/${path}`;
 };
 
@@ -172,391 +198,335 @@ const goCarousel = (refEl: any, direction: 'prev' | 'next') => {
 };
 
 const onCarouselItemClick = (href: string | null, e: MouseEvent) => {
-    if (!href) return;
-    if (wasJustDragged()) return;
+    if (!href) {
+        return;
+    }
+
+    if (wasJustDragged()) {
+        return;
+    }
+
     if (e.target instanceof Element && e.target.closest('a,button,input,select,textarea,label')) {
         return;
     }
+
     router.visit(href);
 };
+
+type QuickLink = {
+    title: string;
+    subtitle: string;
+    href: string;
+    icon: any;
+};
+
+const quickLinks = computed<QuickLink[]>(() => [
+    { title: 'Explore', subtitle: 'Cari villa', href: '/explore', icon: Search },
+    { title: 'Area', subtitle: 'Lokasi populer', href: '/explore', icon: MapPinned },
+    { title: 'Booking', subtitle: 'Cek pesanan', href: user.value ? '/bookings' : '/login', icon: CalendarDays },
+    { title: 'Host', subtitle: 'Kelola listing', href: user.value ? '/properties' : '/login', icon: Building2 },
+]);
 </script>
 
 <template>
     <Head title="BookMyVilla" />
 
-    <div class="bg-[color:var(--clay-canvas)] text-[color:var(--clay-ink)]">
-        <section class="mx-auto w-full max-w-md px-6 py-12">
-                <div class="grid grid-cols-1 items-start gap-10">
+    <div class="min-h-dvh bg-[color:var(--clay-canvas)] text-[color:var(--clay-ink)]">
+        <section class="mx-auto w-full max-w-md px-4 pb-10 pt-6">
+            <div class="flex items-start justify-between gap-4">
+                <div class="min-w-0">
+                    <div class="text-xs font-medium text-[color:var(--clay-muted)]">Hello</div>
+                    <div class="mt-1 truncate text-lg font-semibold tracking-tight">
+                        {{ greetingName }}
+                    </div>
+                    <div class="mt-1 text-sm text-[color:var(--clay-body)]">
+                        {{ tagline }}
+                    </div>
+                </div>
+                <div
+                    class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-card)]"
+                    aria-hidden="true"
+                >
+                    <span class="h-2.5 w-2.5 rounded-full bg-[color:var(--primary)]" />
+                </div>
+            </div>
+
+            <div class="mt-5">
+                <Button
+                    variant="outline"
+                    as-child
+                    class="h-11 w-full justify-start gap-2 rounded-xl bg-[color:var(--clay-canvas)]"
+                >
+                    <Link href="/explore" class="w-full">
+                        <Search class="h-4 w-4 text-[color:var(--clay-muted)]" />
+                        <span class="text-[color:var(--clay-muted)]">Cari villa, area, atau lokasi…</span>
+                    </Link>
+                </Button>
+            </div>
+
+            <div class="mt-5 grid grid-cols-4 gap-3">
+                <Link
+                    v-for="item in quickLinks"
+                    :key="item.title"
+                    :href="item.href"
+                    class="group flex flex-col items-center gap-2 rounded-2xl border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-card)] px-2 py-3 text-center transition-shadow hover:shadow-sm"
+                >
+                    <span
+                        class="flex h-10 w-10 items-center justify-center rounded-2xl bg-[color:var(--clay-canvas)]"
+                    >
+                        <component :is="item.icon" class="h-5 w-5 text-[color:var(--primary)]" />
+                    </span>
+                    <span class="leading-tight">
+                        <span class="block text-xs font-medium">{{ item.title }}</span>
+                        <span class="block text-[11px] text-[color:var(--clay-muted)]">
+                            {{ item.subtitle }}
+                        </span>
+                    </span>
+                </Link>
+            </div>
+
+            <div
+                class="relative mt-6 overflow-hidden rounded-2xl border border-[color:var(--clay-hairline)] bg-[linear-gradient(135deg,var(--clay-surface-soft),var(--clay-canvas))]"
+            >
+                <div
+                    class="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full bg-[color:var(--primary)] opacity-10 blur-xl"
+                />
+                <div
+                    class="pointer-events-none absolute -bottom-12 -left-12 h-40 w-40 rounded-full bg-[color:var(--clay-brand-pink)] opacity-10 blur-xl"
+                />
+                <div class="relative p-4">
+                    <div class="text-xs font-medium text-[color:var(--clay-muted)]">
+                        Highlight
+                    </div>
+                    <div class="mt-1 text-base font-semibold tracking-tight">
+                        Booking villa harian, cepat & simpel
+                    </div>
+                    <div class="mt-1 text-sm text-[color:var(--clay-body)]">
+                        Lihat listing terbaru, pilih tanggal, lalu booking.
+                    </div>
+                    <div class="mt-4 flex gap-2">
+                        <Button size="sm" as-child>
+                            <Link :href="primaryCtaHref">{{ primaryCtaLabel }}</Link>
+                        </Button>
+                        <Button size="sm" variant="outline" as-child>
+                            <Link href="/explore">Lihat Semua</Link>
+                        </Button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-7">
+                <div class="flex items-center justify-between gap-3">
                     <div>
-                        <div
-                            class="inline-flex items-center gap-2 rounded-full border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-soft)] px-3 py-1 text-xs text-[color:var(--clay-muted)]"
-                        >
-                            <span class="h-2 w-2 rounded-full bg-[color:var(--clay-brand-ochre)]" />
-                            Booking villa harian
-                        </div>
-
-                        <h1
-                            class="mt-5 text-4xl font-semibold leading-tight tracking-tight text-[color:var(--clay-ink)]"
-                        >
-                            Temukan villa impianmu. Booking harian, tanpa ribet.
-                        </h1>
-                        <p class="mt-4 max-w-xl text-base text-[color:var(--clay-body)]">
-                            Jelajahi villa yang tersedia, pilih tanggal, dan buat booking.
-                            Untuk host, kelola listing, foto, dan status publish dalam satu tempat.
-                        </p>
-
-                        <div class="mt-7 flex flex-wrap items-center gap-3">
-                            <Button as-child>
-                                <Link :href="primaryCtaHref">{{ primaryCtaLabel }}</Link>
-                            </Button>
-                            <Button variant="outline" as-child>
-                                <Link href="/explore">Lihat Semua Villa</Link>
-                            </Button>
-                        </div>
-
-                        <div class="mt-8 flex flex-col gap-6">
-                            <div
-                                class="mx-auto w-full max-w-md rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-card)] p-4"
-                            >
-                                <div class="flex items-center gap-3">
-                                    <div class="min-w-0 flex-1">
-                                        <div
-                                            class="text-sm font-medium text-[color:var(--clay-ink)]"
-                                        >
-                                            Rekomendasi Villa
-                                        </div>
-                                        <div
-                                            class="mt-1 text-xs text-[color:var(--clay-muted)]"
-                                        >
-                                            Swipe untuk lihat pilihan
-                                        </div>
-                                    </div>
-                                    <div
-                                        class="shrink-0 overflow-hidden rounded-full border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)]"
-                                    >
-                                        <div class="flex items-center">
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="icon"
-                                                class="h-8 w-8 rounded-none"
-                                                aria-label="Sebelumnya"
-                                                @click="goCarousel(villaSplideRef, 'prev')"
-                                            >
-                                                <ChevronLeft class="h-4 w-4" />
-                                            </Button>
-                                            <div class="h-8 w-px bg-[color:var(--clay-hairline)]" />
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="icon"
-                                                class="h-8 w-8 rounded-none"
-                                                aria-label="Berikutnya"
-                                                @click="goCarousel(villaSplideRef, 'next')"
-                                            >
-                                                <ChevronRight class="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <Splide
-                                    ref="villaSplideRef"
-                                    class="mt-4"
-                                    :options="{
-                                        type: 'slide',
-                                        perPage: 1,
-                                        gap: '0.75rem',
-                                        padding: { right: '2.5rem' },
-                                        focus: 0,
-                                        arrows: false,
-                                        pagination: false,
-                                        drag: true,
-                                        speed: 450,
-                                    }"
-                                    @moved="markDragged"
-                                >
-                                    <SplideSlide
-                                        v-for="s in villaCarouselItems"
-                                        :key="s.key"
-                                        class="pb-1"
-                                    >
-                                        <div
-                                            class="relative w-full overflow-hidden rounded-xl border border-[color:var(--clay-hairline)]"
-                                            :class="s.href ? 'cursor-pointer' : ''"
-                                            @click="onCarouselItemClick(s.href, $event)"
-                                        >
-                                            <div
-                                                class="relative aspect-[16/9] sm:aspect-[4/3]"
-                                                :style="{ backgroundColor: s.bg }"
-                                            >
-                                                <img
-                                                    v-if="s.imageUrl"
-                                                    :src="s.imageUrl"
-                                                    alt=""
-                                                    class="absolute inset-0 h-full w-full object-cover"
-                                                />
-                                                <div
-                                                    class="absolute inset-0 bg-gradient-to-t from-black/25 to-transparent"
-                                                />
-                                                <div
-                                                    class="absolute left-3 top-3 rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-medium text-white"
-                                                >
-                                                    {{ s.badge }}
-                                                </div>
-                                                <Link
-                                                    v-if="s.href"
-                                                    :href="s.href"
-                                                    class="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/25 bg-white/10 text-white backdrop-blur-sm"
-                                                >
-                                                    <ArrowUpRight class="h-4 w-4" />
-                                                </Link>
-                                                <div
-                                                    v-else
-                                                    class="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/25 bg-white/10 text-white/70 backdrop-blur-sm"
-                                                >
-                                                    <ArrowUpRight class="h-4 w-4" />
-                                                </div>
-                                            </div>
-                                            <div
-                                                class="bg-[color:var(--clay-canvas)] p-3"
-                                            >
-                                                <div
-                                                    class="text-sm font-semibold text-[color:var(--clay-ink)]"
-                                                >
-                                                    {{ s.title }}
-                                                </div>
-                                                <div
-                                                    class="mt-1 truncate text-xs text-[color:var(--clay-muted)]"
-                                                >
-                                                    {{ s.subtitle }}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </SplideSlide>
-                                </Splide>
-                            </div>
-
-                            <div
-                                class="mx-auto w-full max-w-md rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-card)] p-4"
-                            >
-                                <div class="flex items-center gap-3">
-                                    <div class="min-w-0 flex-1">
-                                        <div
-                                            class="text-sm font-medium text-[color:var(--clay-ink)]"
-                                        >
-                                            Rekomendasi Kost
-                                        </div>
-                                        <div
-                                            class="mt-1 text-xs text-[color:var(--clay-muted)]"
-                                        >
-                                            Swipe untuk lihat pilihan
-                                        </div>
-                                    </div>
-                                    <div
-                                        class="shrink-0 overflow-hidden rounded-full border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)]"
-                                    >
-                                        <div class="flex items-center">
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="icon"
-                                                class="h-8 w-8 rounded-none"
-                                                aria-label="Sebelumnya"
-                                                @click="goCarousel(kostSplideRef, 'prev')"
-                                            >
-                                                <ChevronLeft class="h-4 w-4" />
-                                            </Button>
-                                            <div class="h-8 w-px bg-[color:var(--clay-hairline)]" />
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="icon"
-                                                class="h-8 w-8 rounded-none"
-                                                aria-label="Berikutnya"
-                                                @click="goCarousel(kostSplideRef, 'next')"
-                                            >
-                                                <ChevronRight class="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <Splide
-                                    ref="kostSplideRef"
-                                    class="mt-4"
-                                    :options="{
-                                        type: 'slide',
-                                        perPage: 1,
-                                        gap: '0.75rem',
-                                        padding: { right: '2.5rem' },
-                                        focus: 0,
-                                        arrows: false,
-                                        pagination: false,
-                                        drag: true,
-                                        speed: 450,
-                                    }"
-                                    @moved="markDragged"
-                                >
-                                    <SplideSlide
-                                        v-for="s in kostCarouselItems"
-                                        :key="s.key"
-                                        class="pb-1"
-                                    >
-                                        <div
-                                            class="relative w-full overflow-hidden rounded-xl border border-[color:var(--clay-hairline)]"
-                                        >
-                                            <div
-                                                class="relative aspect-[16/9] sm:aspect-[4/3]"
-                                                :style="{ backgroundColor: s.bg }"
-                                            >
-                                                <img
-                                                    v-if="s.imageUrl"
-                                                    :src="s.imageUrl"
-                                                    alt=""
-                                                    class="absolute inset-0 h-full w-full object-cover"
-                                                />
-                                                <div
-                                                    class="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent"
-                                                />
-                                                <div
-                                                    class="absolute left-3 top-3 rounded-full bg-black/10 px-2.5 py-1 text-[11px] font-medium text-[color:var(--clay-ink)]"
-                                                >
-                                                    {{ s.badge }}
-                                                </div>
-                                                <div
-                                                    class="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full border border-black/10 bg-black/5 text-[color:var(--clay-ink)] backdrop-blur-sm"
-                                                >
-                                                    <ArrowUpRight class="h-4 w-4 opacity-70" />
-                                                </div>
-                                            </div>
-                                            <div
-                                                class="bg-[color:var(--clay-canvas)] p-3"
-                                            >
-                                                <div
-                                                    class="text-sm font-semibold text-[color:var(--clay-ink)]"
-                                                >
-                                                    {{ s.title }}
-                                                </div>
-                                                <div
-                                                    class="mt-1 truncate text-xs text-[color:var(--clay-muted)]"
-                                                >
-                                                    {{ s.subtitle }}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </SplideSlide>
-                                </Splide>
-                            </div>
+                        <div class="text-sm font-semibold">Featured Villas</div>
+                        <div class="mt-0.5 text-xs text-[color:var(--clay-muted)]">
+                            Swipe untuk lihat pilihan
                         </div>
                     </div>
-
-                    <div>
-                        <div
-                            class="overflow-hidden rounded-xl border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-soft)] p-5"
+                    <div class="flex items-center gap-2">
+                        <Button
+                            type="button"
+                            size="icon-sm"
+                            variant="outline"
+                            aria-label="Sebelumnya"
+                            class="rounded-full"
+                            @click="goCarousel(villaSplideRef, 'prev')"
                         >
-                            <div class="grid grid-cols-1 gap-4">
-                                <div class="rounded-xl bg-[color:var(--clay-brand-pink)] p-5 text-white">
-                                    <div class="text-sm font-medium">Explore</div>
-                                    <div class="mt-2 text-sm text-white/90">
-                                        Cari villa berdasarkan nama atau lokasi.
-                                    </div>
-                                    <div class="mt-4 rounded-lg bg-white/10 p-3 text-xs">
-                                        /explore → listing villa publish
-                                    </div>
-                                </div>
-                                <div class="rounded-xl bg-[color:var(--clay-brand-teal)] p-5 text-white">
-                                    <div class="text-sm font-medium">Booking</div>
-                                    <div class="mt-2 text-sm text-white/90">
-                                        Tentukan tanggal check-in & check-out, lalu submit booking.
-                                    </div>
-                                    <div class="mt-4 rounded-lg bg-white/10 p-3 text-xs">
-                                        Status: pending_payment → confirmed
-                                    </div>
-                                </div>
+                            <ChevronLeft class="h-4 w-4" />
+                        </Button>
+                        <Button
+                            type="button"
+                            size="icon-sm"
+                            variant="outline"
+                            aria-label="Berikutnya"
+                            class="rounded-full"
+                            @click="goCarousel(villaSplideRef, 'next')"
+                        >
+                            <ChevronRight class="h-4 w-4" />
+                        </Button>
+                    </div>
+                </div>
+
+                <Splide
+                    ref="villaSplideRef"
+                    class="mt-4"
+                    :options="{
+                        type: 'slide',
+                        perPage: 1,
+                        gap: '0.9rem',
+                        padding: { right: '2.75rem' },
+                        focus: 0,
+                        arrows: false,
+                        pagination: false,
+                        drag: true,
+                        speed: 450,
+                    }"
+                    @moved="markDragged"
+                >
+                    <SplideSlide v-for="s in villaCarouselItems" :key="s.key" class="pb-1">
+                        <div
+                            class="relative w-full overflow-hidden rounded-2xl border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)] shadow-xs transition-shadow"
+                            :class="s.href ? 'cursor-pointer hover:shadow-sm' : ''"
+                            @click="onCarouselItemClick(s.href, $event)"
+                        >
+                            <div class="relative aspect-[16/10]" :style="{ backgroundColor: s.bg }">
+                                <img
+                                    v-if="s.imageUrl"
+                                    :src="s.imageUrl"
+                                    alt=""
+                                    class="absolute inset-0 h-full w-full object-cover"
+                                />
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/25 to-transparent" />
                                 <div
-                                    class="rounded-xl bg-[color:var(--clay-brand-lavender)] p-5 text-[color:var(--clay-ink)]"
+                                    class="absolute left-3 top-3 rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur-sm"
                                 >
-                                    <div class="text-sm font-medium">Detail Property</div>
-                                    <div class="mt-2 text-sm text-[color:var(--clay-body)]">
-                                        Galeri, deskripsi WYSIWYG, dan highlight fasilitas.
-                                    </div>
-                                    <div
-                                        class="mt-4 rounded-lg bg-[color:var(--clay-canvas)] p-3 text-xs text-[color:var(--clay-muted)]"
-                                    >
-                                        Preview foto + deskripsi
-                                    </div>
+                                    {{ s.badge }}
                                 </div>
-                                <div
-                                    class="rounded-xl bg-[color:var(--clay-brand-peach)] p-5 text-[color:var(--clay-ink)]"
+                                <Link
+                                    v-if="s.href"
+                                    :href="s.href"
+                                    class="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/25 bg-white/10 text-white backdrop-blur-sm"
                                 >
-                                    <div class="text-sm font-medium">Untuk Host</div>
-                                    <div class="mt-2 text-sm text-[color:var(--clay-body)]">
-                                        Kelola property, publish/unpublish, dan update foto.
-                                    </div>
-                                    <div
-                                        class="mt-4 rounded-lg bg-[color:var(--clay-canvas)] p-3 text-xs text-[color:var(--clay-muted)]"
-                                    >
-                                        /properties → dashboard host
-                                    </div>
+                                    <ArrowUpRight class="h-4 w-4" />
+                                </Link>
+                                <div
+                                    v-else
+                                    class="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/25 bg-white/10 text-white/70 backdrop-blur-sm"
+                                >
+                                    <ArrowUpRight class="h-4 w-4" />
+                                </div>
+                            </div>
+                            <div class="p-3">
+                                <div class="text-sm font-semibold">{{ s.title }}</div>
+                                <div class="mt-1 truncate text-xs text-[color:var(--clay-muted)]">
+                                    {{ s.subtitle }}
                                 </div>
                             </div>
                         </div>
+                    </SplideSlide>
+                </Splide>
+            </div>
 
-                        <div
-                            class="mt-6 rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)] p-5"
+            <div class="mt-7">
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <div class="text-sm font-semibold">Rekomendasi Kost</div>
+                        <div class="mt-0.5 text-xs text-[color:var(--clay-muted)]">
+                            Swipe untuk lihat pilihan
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <Button
+                            type="button"
+                            size="icon-sm"
+                            variant="outline"
+                            aria-label="Sebelumnya"
+                            class="rounded-full"
+                            @click="goCarousel(kostSplideRef, 'prev')"
                         >
-                            <div class="text-sm font-medium text-[color:var(--clay-ink)]">
-                                Mulai dari mana?
-                            </div>
-                            <div class="mt-3 grid grid-cols-1 gap-3">
+                            <ChevronLeft class="h-4 w-4" />
+                        </Button>
+                        <Button
+                            type="button"
+                            size="icon-sm"
+                            variant="outline"
+                            aria-label="Berikutnya"
+                            class="rounded-full"
+                            @click="goCarousel(kostSplideRef, 'next')"
+                        >
+                            <ChevronRight class="h-4 w-4" />
+                        </Button>
+                    </div>
+                </div>
+
+                <Splide
+                    ref="kostSplideRef"
+                    class="mt-4"
+                    :options="{
+                        type: 'slide',
+                        perPage: 1,
+                        gap: '0.9rem',
+                        padding: { right: '2.75rem' },
+                        focus: 0,
+                        arrows: false,
+                        pagination: false,
+                        drag: true,
+                        speed: 450,
+                    }"
+                    @moved="markDragged"
+                >
+                    <SplideSlide v-for="s in kostCarouselItems" :key="s.key" class="pb-1">
+                        <div
+                            class="relative w-full overflow-hidden rounded-2xl border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)] shadow-xs"
+                        >
+                            <div class="relative aspect-[16/10]" :style="{ backgroundColor: s.bg }">
+                                <img
+                                    v-if="s.imageUrl"
+                                    :src="s.imageUrl"
+                                    alt=""
+                                    class="absolute inset-0 h-full w-full object-cover"
+                                />
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent" />
                                 <div
-                                    class="rounded-md border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-card)] p-4"
+                                    class="absolute left-3 top-3 rounded-full bg-black/10 px-2.5 py-1 text-[11px] font-medium text-[color:var(--clay-ink)]"
                                 >
-                                    <div class="text-sm font-medium">Mau sewa villa</div>
-                                    <div class="mt-1 text-sm text-[color:var(--clay-body)]">
-                                        Browse dulu, lalu login untuk booking.
-                                    </div>
-                                    <div class="mt-4 flex gap-2">
-                                        <Button size="sm" as-child>
-                                            <Link href="/explore">Explore</Link>
-                                        </Button>
-                                        <Button
-                                            v-if="!$page.props.auth.user"
-                                            size="sm"
-                                            variant="outline"
-                                            as-child
-                                        >
-                                            <Link :href="login()">Masuk</Link>
-                                        </Button>
-                                    </div>
+                                    {{ s.badge }}
                                 </div>
                                 <div
-                                    class="rounded-md border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-card)] p-4"
+                                    class="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full border border-black/10 bg-black/5 text-[color:var(--clay-ink)] backdrop-blur-sm"
                                 >
-                                    <div class="text-sm font-medium">Mau jadi host</div>
-                                    <div class="mt-1 text-sm text-[color:var(--clay-body)]">
-                                        Login sebagai host/admin untuk mengelola property.
-                                    </div>
-                                    <div class="mt-4 flex gap-2">
-                                        <Button size="sm" as-child>
-                                            <Link href="/properties">Kelola Property</Link>
-                                        </Button>
-                                        <Button
-                                            v-if="!$page.props.auth.user && canRegister"
-                                            size="sm"
-                                            variant="outline"
-                                            as-child
-                                        >
-                                            <Link :href="register()">Daftar</Link>
-                                        </Button>
-                                    </div>
+                                    <ArrowUpRight class="h-4 w-4 opacity-70" />
                                 </div>
                             </div>
+                            <div class="p-3">
+                                <div class="text-sm font-semibold">{{ s.title }}</div>
+                                <div class="mt-1 truncate text-xs text-[color:var(--clay-muted)]">
+                                    {{ s.subtitle }}
+                                </div>
+                            </div>
+                        </div>
+                    </SplideSlide>
+                </Splide>
+            </div>
+
+            <div class="mt-8 rounded-2xl border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)] p-4">
+                <div class="text-sm font-semibold">Mulai dari mana?</div>
+                <div class="mt-3 grid grid-cols-1 gap-3">
+                    <div class="rounded-xl border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-card)] p-4">
+                        <div class="text-sm font-medium">Mau sewa villa</div>
+                        <div class="mt-1 text-sm text-[color:var(--clay-body)]">
+                            Browse dulu, lalu login untuk booking.
+                        </div>
+                        <div class="mt-4 flex gap-2">
+                            <Button size="sm" as-child>
+                                <Link href="/explore">Explore</Link>
+                            </Button>
+                            <Button v-if="!$page.props.auth.user" size="sm" variant="outline" as-child>
+                                <Link :href="login()">Masuk</Link>
+                            </Button>
+                        </div>
+                    </div>
+                    <div class="rounded-xl border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-card)] p-4">
+                        <div class="text-sm font-medium">Mau jadi host</div>
+                        <div class="mt-1 text-sm text-[color:var(--clay-body)]">
+                            Login sebagai host/admin untuk mengelola property.
+                        </div>
+                        <div class="mt-4 flex gap-2">
+                            <Button size="sm" as-child>
+                                <Link href="/properties">Kelola Property</Link>
+                            </Button>
+                            <Button
+                                v-if="!$page.props.auth.user && canRegister"
+                                size="sm"
+                                variant="outline"
+                                as-child
+                            >
+                                <Link :href="register()">Daftar</Link>
+                            </Button>
                         </div>
                     </div>
                 </div>
+            </div>
         </section>
-
     </div>
 </template>

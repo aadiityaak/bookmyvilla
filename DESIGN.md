@@ -562,3 +562,33 @@ The system uses no heavy shadows. Depth comes from the saturated color contrast 
 - Animation and transition timings (3D illustration parallax on scroll, feature card entrance animations) are not in scope.
 - Form validation states beyond `{component.text-input-focused}` are not extracted.
 - The actual Clay product surface (in-app data tables, formula editor, agent builder) shares some tokens with the marketing site but adds many product-specific components that are out of scope.
+
+## BookMyVilla App (Mobile)
+
+### Prinsip Utama
+
+- **Mobile-first container:** layar publik (Home/Explore) memakai container `max-w-md` dan padding horizontal 16px agar terasa seperti aplikasi.
+- **Token-first colors:** hindari warna hardcode. Selalu pakai CSS variables:
+  - Surface: `--clay-canvas`, `--clay-surface-card`, `--clay-surface-soft`, `--clay-hairline`
+  - Teks: `--clay-ink`, `--clay-body`, `--clay-muted`
+  - Brand: `--primary` (utama), `--clay-brand-pink` (aksen)
+- **Brand settings override:** `primary_color` & `secondary_color` dari Setting Branding memetakan ke token di UI:
+  - `primary_color` → `--primary` (juga dipakai untuk ring/sidebar/CTA)
+  - `secondary_color` → `--clay-brand-pink` (aksen/highlight)
+- **Hierarchy jelas:** judul/heading ringkas, deskripsi satu baris, dan CTA yang konkret.
+- **Touch target:** kontrol utama minimal 44px tinggi (button/input).
+
+### Pola Layout (Home v2)
+
+- **Header ringkas:** greeting + nama/brand + tagline.
+- **Search bar tunggal:** satu input (atau pseudo-input) sebagai entry point ke Explore.
+- **Quick actions grid:** 4 shortcut utama (Explore/Area/Booking/Host) berbentuk card kecil dengan ikon.
+- **Highlight banner:** card gradient lembut untuk CTA utama dan CTA sekunder.
+- **Carousel cards:** kartu rounded besar, gambar dengan overlay gradient, badge tipe, dan tombol detail.
+
+### Pola Layout (Explore v2)
+
+- **Header + count:** tampilkan judul Explore dan jumlah hasil.
+- **Filter card:** search + sort, dengan reset yang hanya muncul saat filter aktif.
+- **Map sebagai panel:** map berada dalam card dan bisa ditampilkan/disembunyikan (mengutamakan listing).
+- **Listing card:** gambar + badge tipe + judul + alamat, dengan affordance tap yang jelas.

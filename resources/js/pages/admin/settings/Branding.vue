@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3';
-import { onUnmounted, ref } from 'vue';
+import { computed, onUnmounted, ref } from 'vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
@@ -26,6 +26,7 @@ const toImageUrl = (path: string | null) => {
 };
 
 const fileInputRef = ref<HTMLInputElement | null>(null);
+const logoDragOver = ref(false);
 const logoPreview = ref<string | null>(toImageUrl(props.settings.logo_path));
 let logoObjectUrl: string | null = null;
 
@@ -42,9 +43,7 @@ const pickLogo = () => {
     fileInputRef.value?.click();
 };
 
-const onLogoChange = (e: Event) => {
-    const input = e.target as HTMLInputElement;
-    const file = input.files?.[0] ?? null;
+const setLogo = (file: File | null) => {
     form.logo_file = file;
     form.logo_remove = false;
 
@@ -62,6 +61,26 @@ const onLogoChange = (e: Event) => {
     logoPreview.value = toImageUrl(props.settings.logo_path);
 };
 
+const onLogoChange = (e: Event) => {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    if (file && file.type.startsWith('image/')) {
+        setLogo(file);
+    } else {
+        setLogo(null);
+    }
+    input.value = '';
+};
+
+const onLogoDrop = (event: DragEvent) => {
+    event.preventDefault();
+    logoDragOver.value = false;
+    const file = event.dataTransfer?.files?.[0] ?? null;
+    if (file && file.type.startsWith('image/')) {
+        setLogo(file);
+    }
+};
+
 const removeLogo = () => {
     form.logo_remove = true;
     form.logo_file = null;
@@ -73,6 +92,26 @@ const removeLogo = () => {
 
     logoPreview.value = null;
 };
+
+const isHexColor = (value: string) => /^#([0-9a-fA-F]{6})$/.test(value.trim());
+
+const primaryColorPicker = computed<string>({
+    get() {
+        return isHexColor(form.primary_color) ? String(form.primary_color).trim() : '#000000';
+    },
+    set(value) {
+        form.primary_color = value;
+    },
+});
+
+const secondaryColorPicker = computed<string>({
+    get() {
+        return isHexColor(form.secondary_color) ? String(form.secondary_color).trim() : '#000000';
+    },
+    set(value) {
+        form.secondary_color = value;
+    },
+});
 
 const submit = () => {
     form.transform((data) => ({
@@ -143,35 +182,51 @@ defineOptions({
             <div class="grid gap-4 sm:grid-cols-2">
                 <div class="grid gap-2">
                     <Label for="primary_color">Warna utama</Label>
-                    <Input
-                        id="primary_color"
-                        v-model="form.primary_color"
-                        class="clay-control"
-                        placeholder="#1a3a3a"
-                    />
+                    <div class="flex items-center gap-3">
+                        <input
+                            id="primary_color_picker"
+                            v-model="primaryColorPicker"
+                            type="color"
+                            class="h-11 w-14 shrink-0 cursor-pointer rounded-md border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)] p-1"
+                        />
+                        <Input
+                            id="primary_color"
+                            v-model="form.primary_color"
+                            class="clay-control"
+                            placeholder="#1a3a3a"
+                        />
+                    </div>
                     <InputError :message="form.errors.primary_color" />
                 </div>
 
                 <div class="grid gap-2">
                     <Label for="secondary_color">Warna sekunder</Label>
-                    <Input
-                        id="secondary_color"
-                        v-model="form.secondary_color"
-                        class="clay-control"
-                        placeholder="#ff4d8b"
-                    />
+                    <div class="flex items-center gap-3">
+                        <input
+                            id="secondary_color_picker"
+                            v-model="secondaryColorPicker"
+                            type="color"
+                            class="h-11 w-14 shrink-0 cursor-pointer rounded-md border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)] p-1"
+                        />
+                        <Input
+                            id="secondary_color"
+                            v-model="form.secondary_color"
+                            class="clay-control"
+                            placeholder="#ff4d8b"
+                        />
+                    </div>
                     <InputError :message="form.errors.secondary_color" />
                 </div>
             </div>
 
             <div class="grid gap-3">
                 <div class="flex items-center justify-between gap-3">
-                    <div class="text-sm font-medium text-[color:var(--clay-ink)]">
+                    <Label class="text-sm font-medium text-[color:var(--clay-ink)]">
                         Logo
-                    </div>
+                    </Label>
                     <div class="flex items-center gap-2">
                         <Button type="button" variant="outline" @click="pickLogo">
-                            Upload logo
+                            Browse
                         </Button>
                         <Button
                             v-if="logoPreview"
@@ -193,14 +248,26 @@ defineOptions({
                 />
 
                 <div
-                    v-if="logoPreview"
-                    class="overflow-hidden rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-card)]"
+                    class="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-soft)] px-4 py-8 text-center"
+                    :class="[logoDragOver ? 'border-[color:var(--clay-ink)]' : '']"
+                    @click="pickLogo"
+                    @dragenter.prevent="logoDragOver = true"
+                    @dragover.prevent="logoDragOver = true"
+                    @dragleave.prevent="logoDragOver = false"
+                    @drop="onLogoDrop"
                 >
-                    <img :src="logoPreview" alt="" class="h-28 w-full object-contain p-4" />
-                </div>
-
-                <div v-else class="text-sm text-[color:var(--clay-muted)]">
-                    Belum ada logo.
+                    <div
+                        v-if="logoPreview"
+                        class="w-full overflow-hidden rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)]"
+                    >
+                        <img :src="logoPreview" alt="" class="h-28 w-full object-contain p-4" />
+                    </div>
+                    <div v-else class="text-sm font-medium text-[color:var(--clay-ink)]">
+                        Drag & drop logo di sini
+                    </div>
+                    <div v-if="!logoPreview" class="text-xs text-[color:var(--clay-muted)]">
+                        PNG/JPG sampai 5MB
+                    </div>
                 </div>
 
                 <InputError :message="form.errors.logo_file" />
