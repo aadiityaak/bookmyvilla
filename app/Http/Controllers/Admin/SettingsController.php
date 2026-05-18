@@ -157,6 +157,126 @@ class SettingsController extends Controller
         return back();
     }
 
+    public function paymentEdit(): Response
+    {
+        $settings = $this->getSetting('payment', [
+            'banks' => [],
+            'qris_image_path' => null,
+        ]);
+
+        $banks = is_array($settings['banks'] ?? null) ? $settings['banks'] : [];
+
+        if (count($banks) === 0) {
+            $legacyBank = [
+                'bank_name' => $settings['bank_name'] ?? null,
+                'account_name' => $settings['bank_account_name'] ?? null,
+                'account_number' => $settings['bank_account_number'] ?? null,
+            ];
+
+            $hasLegacyValue = false;
+            foreach ($legacyBank as $value) {
+                if (is_string($value) && trim($value) !== '') {
+                    $hasLegacyValue = true;
+                    break;
+                }
+            }
+
+            if ($hasLegacyValue) {
+                $banks = [$legacyBank];
+            }
+        }
+
+        return Inertia::render('admin/settings/Payment', [
+            'settings' => [
+                'banks' => array_values($banks),
+                'qris_image_path' => $settings['qris_image_path'] ?? null,
+            ],
+        ]);
+    }
+
+    public function paymentUpdate(Request $request): RedirectResponse
+    {
+        if (! Schema::hasTable('app_settings')) {
+            Inertia::flash('toast', [
+                'type' => 'error',
+                'message' => 'Tabel app_settings belum tersedia. Jalankan migration terlebih dulu.',
+            ]);
+
+            return back();
+        }
+
+        $validated = $request->validate([
+            'banks' => ['nullable', 'array', 'max:10'],
+            'banks.*.bank_name' => ['nullable', 'string', 'max:80'],
+            'banks.*.account_name' => ['nullable', 'string', 'max:120'],
+            'banks.*.account_number' => ['nullable', 'string', 'max:60'],
+            'qris_remove' => ['nullable', 'boolean'],
+            'qris_file' => ['nullable', 'file', 'image', 'max:5120'],
+        ]);
+
+        $current = $this->getSetting('payment', [
+            'banks' => [],
+            'qris_image_path' => null,
+        ]);
+
+        $qrisPath = $current['qris_image_path'] ?? null;
+
+        if (($validated['qris_remove'] ?? false) && is_string($qrisPath) && $qrisPath !== '') {
+            if (Storage::disk('public')->exists($qrisPath)) {
+                Storage::disk('public')->delete($qrisPath);
+            }
+
+            $qrisPath = null;
+        }
+
+        if ($request->file('qris_file')) {
+            $newPath = $request->file('qris_file')->store('payment', 'public');
+
+            if (is_string($qrisPath) && $qrisPath !== '' && Storage::disk('public')->exists($qrisPath)) {
+                Storage::disk('public')->delete($qrisPath);
+            }
+
+            $qrisPath = $newPath;
+        }
+
+        $banks = [];
+        if (is_array($validated['banks'] ?? null)) {
+            foreach ($validated['banks'] as $row) {
+                if (! is_array($row)) {
+                    continue;
+                }
+
+                $bankName = is_string($row['bank_name'] ?? null) ? trim($row['bank_name']) : '';
+                $accountName = is_string($row['account_name'] ?? null) ? trim($row['account_name']) : '';
+                $accountNumber = is_string($row['account_number'] ?? null) ? trim($row['account_number']) : '';
+
+                if ($bankName === '' && $accountName === '' && $accountNumber === '') {
+                    continue;
+                }
+
+                $banks[] = [
+                    'bank_name' => $bankName !== '' ? $bankName : null,
+                    'account_name' => $accountName !== '' ? $accountName : null,
+                    'account_number' => $accountNumber !== '' ? $accountNumber : null,
+                ];
+            }
+        }
+
+        AppSetting::updateOrCreate(
+            ['key' => 'payment'],
+            [
+                'value' => [
+                    'banks' => $banks,
+                    'qris_image_path' => $qrisPath,
+                ],
+            ],
+        );
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Payment tersimpan.']);
+
+        return back();
+    }
+
     private function getSetting(string $key, array $default): array
     {
         if (! Schema::hasTable('app_settings')) {

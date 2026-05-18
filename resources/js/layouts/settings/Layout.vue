@@ -33,6 +33,10 @@ const sidebarNavItems = computed<NavItem[]>(() => {
                 title: 'Sosmed',
                 href: '/admin/settings/sosmed',
             },
+                {
+                    title: 'Payment',
+                    href: '/admin/settings/payment',
+                },
         ];
     }
 

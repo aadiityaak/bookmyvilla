@@ -113,6 +113,7 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['auth', 'role:tenant'])->group(function () {
     Route::get('bookings', [BookingController::class, 'index'])->name('bookings.index');
     Route::post('bookings', [BookingController::class, 'store'])->name('bookings.store');
+    Route::get('bookings/{booking}/payment', [BookingController::class, 'payment'])->name('bookings.payment');
 });
 
 Route::middleware(['auth', 'role:tenant,admin'])->group(function () {
@@ -155,6 +156,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::patch('settings/branding', [\App\Http\Controllers\Admin\SettingsController::class, 'brandingUpdate'])->name('settings.branding.update');
     Route::get('settings/sosmed', [\App\Http\Controllers\Admin\SettingsController::class, 'sosmedEdit'])->name('settings.sosmed');
     Route::patch('settings/sosmed', [\App\Http\Controllers\Admin\SettingsController::class, 'sosmedUpdate'])->name('settings.sosmed.update');
+    Route::get('settings/payment', [\App\Http\Controllers\Admin\SettingsController::class, 'paymentEdit'])->name('settings.payment');
+    Route::patch('settings/payment', [\App\Http\Controllers\Admin\SettingsController::class, 'paymentUpdate'])->name('settings.payment.update');
 
     Route::get('users', [UserController::class, 'index'])->name('users.index');
     Route::get('users/create', [UserController::class, 'create'])->name('users.create');
