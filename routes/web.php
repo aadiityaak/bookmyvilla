@@ -10,6 +10,7 @@ use App\Models\Article;
 use App\Models\Property;
 use App\Http\Controllers\Admin\PropertyController as AdminPropertyController;
 use App\Http\Controllers\Admin\ArticleController as AdminArticleController;
+use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\BookingController;
@@ -144,6 +145,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('articles/{article}/edit', [AdminArticleController::class, 'edit'])->name('articles.edit');
     Route::patch('articles/{article}', [AdminArticleController::class, 'update'])->name('articles.update');
     Route::delete('articles/{article}', [AdminArticleController::class, 'destroy'])->name('articles.destroy');
+
+    Route::get('orders', [AdminOrderController::class, 'index'])->name('orders.index');
+    Route::get('orders/{booking}/edit', [AdminOrderController::class, 'edit'])->name('orders.edit');
+    Route::patch('orders/{booking}', [AdminOrderController::class, 'update'])->name('orders.update');
 
     Route::redirect('settings', '/admin/settings/branding');
     Route::get('settings/branding', [\App\Http\Controllers\Admin\SettingsController::class, 'brandingEdit'])->name('settings.branding');

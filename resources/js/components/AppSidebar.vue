@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, Building2, CalendarDays, FileText, FolderGit2, LayoutGrid, Settings, Users } from 'lucide-vue-next';
+import { BookOpen, Building2, CalendarDays, FileText, FolderGit2, LayoutGrid, Settings, ShoppingCart, Users } from 'lucide-vue-next';
 import { computed } from 'vue';
 import { usePage } from '@inertiajs/vue3';
 import AppLogo from '@/components/AppLogo.vue';
@@ -54,6 +54,11 @@ const mainNavItems = computed<NavItem[]>(() => {
             title: 'Articles',
             href: '/admin/articles',
             icon: FileText,
+        });
+        items.push({
+            title: 'Orders',
+            href: '/admin/orders',
+            icon: ShoppingCart,
         });
         items.push({
             title: 'Setting',
