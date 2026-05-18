@@ -114,6 +114,7 @@ Route::middleware(['auth', 'role:tenant'])->group(function () {
     Route::get('bookings', [BookingController::class, 'index'])->name('bookings.index');
     Route::post('bookings', [BookingController::class, 'store'])->name('bookings.store');
     Route::get('bookings/{booking}/payment', [BookingController::class, 'payment'])->name('bookings.payment');
+    Route::post('bookings/{booking}/payment', [BookingController::class, 'paymentConfirm'])->name('bookings.payment.confirm');
 });
 
 Route::middleware(['auth', 'role:tenant,admin'])->group(function () {

@@ -16,6 +16,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'total_amount',
     'currency',
     'price_snapshot',
+    'payment_proof_path',
+    'payment_proof_uploaded_at',
 ])]
 class Booking extends Model
 {
@@ -36,7 +38,7 @@ class Booking extends Model
             'check_out_date' => 'date',
             'price_snapshot' => 'array',
             'total_amount' => 'decimal:2',
+            'payment_proof_uploaded_at' => 'datetime',
         ];
     }
 }
-

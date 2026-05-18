@@ -2,6 +2,7 @@
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import Heading from '@/components/Heading.vue';
+import { Button } from '@/components/ui/button';
 
 type BookingRow = {
     id: number;
@@ -116,6 +117,11 @@ const description = computed(() =>
                                 >
                                     {{ b.status }}
                                 </div>
+                            </div>
+                            <div v-if="b.status === 'pending_payment'" class="pt-2">
+                                <Button size="sm" class="w-full" as-child>
+                                    <Link :href="`/bookings/${b.id}/payment`">Bayar sekarang</Link>
+                                </Button>
                             </div>
                         </div>
                     </div>
