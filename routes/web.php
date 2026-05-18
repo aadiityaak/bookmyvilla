@@ -108,6 +108,9 @@ Route::middleware(['auth'])->group(function () {
             ->orderBy('name')
             ->get();
     })->name('wilayah.regencies');
+
+    Route::post('notifications/{notification}/read', [\App\Http\Controllers\NotificationController::class, 'read'])->name('notifications.read');
+    Route::post('notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'readAll'])->name('notifications.read-all');
 });
 
 Route::middleware(['auth', 'role:tenant'])->group(function () {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Link, usePage } from '@inertiajs/vue3';
+import { Link, router, usePage } from '@inertiajs/vue3';
 import { Bell, BookOpen, Folder, LayoutGrid, Menu, Search } from 'lucide-vue-next';
 import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
@@ -10,6 +10,9 @@ import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
     DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -50,6 +53,30 @@ const page = usePage();
 const auth = computed(() => page.props.auth);
 const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
 const canRegister = computed(() => Boolean((page.props as any)?.canRegister));
+const notifications = computed(
+    () => (page.props as any)?.notifications ?? { unread_count: 0, items: [] },
+);
+const unreadCount = computed(() => Number(notifications.value?.unread_count ?? 0));
+const notificationItems = computed(() =>
+    Array.isArray(notifications.value?.items) ? notifications.value.items : [],
+);
+
+const formatDateTime = (iso?: string | null) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (!Number.isFinite(d.getTime())) return '';
+    return d.toLocaleString('id-ID', {
+        day: '2-digit',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+};
+
+const onBellOpenChange = (open: boolean) => {
+    if (!open) return;
+    router.reload({ only: ['notifications'], preserveScroll: true, preserveState: true });
+};
 
 const isPublicHeader = computed(
     () => !page.url.startsWith('/admin') && !page.url.startsWith('/settings'),
@@ -103,9 +130,68 @@ const rightNavItems: NavItem[] = [
             </Link>
 
             <div class="flex items-center gap-2">
-                <Button v-if="auth.user" variant="ghost" size="icon" class="h-9 w-9">
-                    <Bell class="h-5 w-5 opacity-80" />
-                </Button>
+                <DropdownMenu v-if="auth.user" @update:open="onBellOpenChange">
+                    <DropdownMenuTrigger :as-child="true">
+                        <Button variant="ghost" size="icon" class="relative h-9 w-9">
+                            <Bell class="h-5 w-5 opacity-80" />
+                            <span
+                                v-if="unreadCount > 0"
+                                class="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[color:var(--primary)] px-1 text-[10px] font-semibold leading-none text-[color:var(--primary-foreground)]"
+                            >
+                                {{ unreadCount > 9 ? '9+' : unreadCount }}
+                            </span>
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" class="w-80">
+                        <div class="flex items-center justify-between gap-3 px-2 py-1.5">
+                            <DropdownMenuLabel class="p-0">Notifikasi</DropdownMenuLabel>
+                            <Link
+                                v-if="unreadCount > 0"
+                                href="/notifications/read-all"
+                                method="post"
+                                as="button"
+                                class="text-xs text-[color:var(--primary)]"
+                            >
+                                Tandai semua dibaca
+                            </Link>
+                        </div>
+                        <DropdownMenuSeparator />
+                        <div v-if="notificationItems.length === 0" class="px-2 py-3 text-sm text-[color:var(--clay-muted)]">
+                            Belum ada notifikasi.
+                        </div>
+                        <template v-else>
+                            <DropdownMenuItem
+                                v-for="n in notificationItems"
+                                :key="n.id"
+                                class="p-0"
+                            >
+                                <Link
+                                    :href="`/notifications/${n.id}/read`"
+                                    method="post"
+                                    :data="{ redirect: n.url ?? '' }"
+                                    as="button"
+                                    class="flex w-full flex-col gap-0.5 px-2 py-2 text-left"
+                                >
+                                    <div class="flex items-start justify-between gap-2">
+                                        <div class="min-w-0 text-sm font-medium text-[color:var(--clay-ink)]">
+                                            {{ n.title }}
+                                        </div>
+                                        <span
+                                            v-if="!n.read_at"
+                                            class="mt-1 h-2 w-2 shrink-0 rounded-full bg-[color:var(--primary)]"
+                                        />
+                                    </div>
+                                    <div v-if="n.body" class="text-xs text-[color:var(--clay-muted)]">
+                                        {{ n.body }}
+                                    </div>
+                                    <div class="text-[11px] text-[color:var(--clay-muted)]">
+                                        {{ formatDateTime(n.created_at) }}
+                                    </div>
+                                </Link>
+                            </DropdownMenuItem>
+                        </template>
+                    </DropdownMenuContent>
+                </DropdownMenu>
 
                 <DropdownMenu v-if="auth.user">
                     <DropdownMenuTrigger :as-child="true">
@@ -308,6 +394,69 @@ const rightNavItems: NavItem[] = [
                             </template>
                         </div>
                     </div>
+
+                    <DropdownMenu v-if="auth.user" @update:open="onBellOpenChange">
+                        <DropdownMenuTrigger :as-child="true">
+                            <Button variant="ghost" size="icon" class="relative h-9 w-9">
+                                <Bell class="size-5 opacity-80" />
+                                <span
+                                    v-if="unreadCount > 0"
+                                    class="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[color:var(--primary)] px-1 text-[10px] font-semibold leading-none text-[color:var(--primary-foreground)]"
+                                >
+                                    {{ unreadCount > 9 ? '9+' : unreadCount }}
+                                </span>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" class="w-80">
+                            <div class="flex items-center justify-between gap-3 px-2 py-1.5">
+                                <DropdownMenuLabel class="p-0">Notifikasi</DropdownMenuLabel>
+                                <Link
+                                    v-if="unreadCount > 0"
+                                    href="/notifications/read-all"
+                                    method="post"
+                                    as="button"
+                                    class="text-xs text-[color:var(--primary)]"
+                                >
+                                    Tandai semua dibaca
+                                </Link>
+                            </div>
+                            <DropdownMenuSeparator />
+                            <div v-if="notificationItems.length === 0" class="px-2 py-3 text-sm text-[color:var(--clay-muted)]">
+                                Belum ada notifikasi.
+                            </div>
+                            <template v-else>
+                                <DropdownMenuItem
+                                    v-for="n in notificationItems"
+                                    :key="n.id"
+                                    class="p-0"
+                                >
+                                    <Link
+                                        :href="`/notifications/${n.id}/read`"
+                                        method="post"
+                                        :data="{ redirect: n.url ?? '' }"
+                                        as="button"
+                                        class="flex w-full flex-col gap-0.5 px-2 py-2 text-left"
+                                    >
+                                        <div class="flex items-start justify-between gap-2">
+                                            <div class="min-w-0 text-sm font-medium text-[color:var(--clay-ink)]">
+                                                {{ n.title }}
+                                            </div>
+                                            <span
+                                                v-if="!n.read_at"
+                                                class="mt-1 h-2 w-2 shrink-0 rounded-full bg-[color:var(--primary)]"
+                                            />
+                                        </div>
+                                        <div v-if="n.body" class="text-xs text-[color:var(--clay-muted)]">
+                                            {{ n.body }}
+                                        </div>
+                                        <div class="text-[11px] text-[color:var(--clay-muted)]">
+                                            {{ formatDateTime(n.created_at) }}
+                                        </div>
+                                    </Link>
+                                </DropdownMenuItem>
+                            </template>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
 
                     <DropdownMenu v-if="auth.user">
                         <DropdownMenuTrigger :as-child="true">

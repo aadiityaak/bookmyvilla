@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\AppNotification;
 use App\Models\AppSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -77,6 +78,39 @@ class HandleInertiaRequests extends Middleware
             ];
         });
 
+        $user = $request->user();
+        $notifications = [
+            'unread_count' => 0,
+            'items' => [],
+        ];
+
+        if ($user && Schema::hasTable('app_notifications')) {
+            $unreadCount = AppNotification::query()
+                ->where('user_id', $user->id)
+                ->whereNull('read_at')
+                ->count();
+
+            $items = AppNotification::query()
+                ->where('user_id', $user->id)
+                ->orderByDesc('id')
+                ->limit(10)
+                ->get()
+                ->map(fn (AppNotification $n) => [
+                    'id' => $n->id,
+                    'title' => $n->title,
+                    'body' => $n->body,
+                    'url' => $n->url,
+                    'read_at' => optional($n->read_at)?->toISOString(),
+                    'created_at' => optional($n->created_at)?->toISOString(),
+                ])
+                ->all();
+
+            $notifications = [
+                'unread_count' => $unreadCount,
+                'items' => $items,
+            ];
+        }
+
         return [
             ...parent::share($request),
             'name' => $branding['app_name'] ?? config('app.name'),
@@ -85,6 +119,7 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            'notifications' => $notifications,
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }

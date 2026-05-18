@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AppNotification;
 use App\Models\Booking;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -115,12 +117,28 @@ class OrderController extends Controller
             'currency' => ['nullable', 'string', 'size:3'],
         ]);
 
+        $previousStatus = $booking->status;
+
         $booking->fill([
             'status' => $validated['status'],
             'total_amount' => $validated['total_amount'] ?? null,
             'currency' => $validated['currency'] ?? $booking->currency,
         ]);
         $booking->save();
+
+        if ($previousStatus !== $booking->status && Schema::hasTable('app_notifications')) {
+            $targetUrl = $booking->status === 'pending_payment'
+                ? '/bookings/' . $booking->id . '/payment'
+                : '/bookings';
+
+            AppNotification::create([
+                'user_id' => $booking->guest_user_id,
+                'type' => 'order_status',
+                'title' => 'Status booking #' . $booking->id,
+                'body' => 'Status berubah menjadi: ' . $booking->status,
+                'url' => $targetUrl,
+            ]);
+        }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Order updated.')]);
 
