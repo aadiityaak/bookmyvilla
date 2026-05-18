@@ -6,8 +6,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
+use App\Models\Article;
 use App\Models\Property;
 use App\Http\Controllers\Admin\PropertyController as AdminPropertyController;
+use App\Http\Controllers\Admin\ArticleController as AdminArticleController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\ExploreController;
@@ -45,10 +47,27 @@ Route::get('/', function (Request $request) {
             'address' => $p->address,
         ]);
 
+    $articles = Article::query()
+        ->select(['id', 'title', 'slug', 'featured_image', 'excerpt', 'published_at', 'created_at'])
+        ->where('status', 'published')
+        ->orderByDesc('published_at')
+        ->orderByDesc('id')
+        ->limit(6)
+        ->get()
+        ->map(fn(Article $a) => [
+            'id' => $a->id,
+            'title' => $a->title,
+            'slug' => $a->slug,
+            'featured_image' => $a->featured_image,
+            'excerpt' => $a->excerpt,
+            'published_at' => optional($a->published_at ?? $a->created_at)?->toISOString(),
+        ]);
+
     return Inertia::render('guest/Welcome', [
         'canRegister' => Features::enabled(Features::registration()),
         'villas' => $villas,
         'kosts' => $kosts,
+        'articles' => $articles,
     ]);
 })->name('home');
 
@@ -115,6 +134,13 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('properties/{property}/edit', [AdminPropertyController::class, 'edit'])->name('properties.edit');
     Route::patch('properties/{property}', [AdminPropertyController::class, 'update'])->name('properties.update');
     Route::delete('properties/{property}', [AdminPropertyController::class, 'destroy'])->name('properties.destroy');
+
+    Route::get('articles', [AdminArticleController::class, 'index'])->name('articles.index');
+    Route::get('articles/create', [AdminArticleController::class, 'create'])->name('articles.create');
+    Route::post('articles', [AdminArticleController::class, 'store'])->name('articles.store');
+    Route::get('articles/{article}/edit', [AdminArticleController::class, 'edit'])->name('articles.edit');
+    Route::patch('articles/{article}', [AdminArticleController::class, 'update'])->name('articles.update');
+    Route::delete('articles/{article}', [AdminArticleController::class, 'destroy'])->name('articles.destroy');
 
     Route::redirect('settings', '/admin/settings/branding');
     Route::get('settings/branding', [\App\Http\Controllers\Admin\SettingsController::class, 'brandingEdit'])->name('settings.branding');
