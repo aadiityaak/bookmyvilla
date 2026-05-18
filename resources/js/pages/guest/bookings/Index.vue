@@ -83,7 +83,7 @@ const description = computed(() =>
                     <div class="min-w-0 flex-1">
                         <Link
                             v-if="b.property"
-                            :href="`/explore/${b.property.id}`"
+                            :href="b.status === 'confirmed' ? `/bookings/${b.id}/ticket` : `/explore/${b.property.id}`"
                             class="truncate font-medium text-[color:var(--clay-ink)]"
                         >
                             {{ b.property.name }}
