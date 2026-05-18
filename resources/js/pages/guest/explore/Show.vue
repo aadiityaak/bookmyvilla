@@ -1,7 +1,16 @@
 <script setup lang="ts">
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { Splide, SplideSlide } from '@splidejs/vue-splide';
-import { CalendarDays, Image, MapPinned, Users } from 'lucide-vue-next';
+import {
+    CalendarDays,
+    ChevronLeft,
+    ChevronRight,
+    Image,
+    MapPinned,
+    Minus,
+    Plus,
+    Users,
+} from 'lucide-vue-next';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
@@ -50,8 +59,10 @@ defineOptions({
 });
 
 const page = usePage();
-const role = computed(() => (page.props.auth?.user as any)?.role);
-const canBook = computed(() => role.value === 'tenant');
+const user = computed(() => (page.props as any)?.auth?.user ?? null);
+const userRole = computed(() => (user.value as any)?.role ?? null);
+const isLoggedIn = computed(() => Boolean(user.value));
+const canBook = computed(() => isLoggedIn.value && userRole.value === 'tenant');
 
 const imageUrl = (path: string | null) => {
     if (!path) {
@@ -116,6 +127,218 @@ const form = useForm({
     guests_count: 1,
 });
 
+const parseLocalDate = (iso: string) => {
+    if (!iso) return null;
+    const d = new Date(`${iso}T00:00:00`);
+    return Number.isFinite(d.getTime()) ? d : null;
+};
+
+const toIsoDate = (d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+};
+
+const isSameDay = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
+
+const addDays = (d: Date, days: number) => {
+    const next = new Date(d);
+    next.setDate(next.getDate() + days);
+    return next;
+};
+
+const startOfMonth = (d: Date) => new Date(d.getFullYear(), d.getMonth(), 1);
+const addMonths = (d: Date, months: number) => new Date(d.getFullYear(), d.getMonth() + months, 1);
+
+const startOfWeekMonday = (d: Date) => {
+    const next = new Date(d);
+    const jsDay = next.getDay(); // 0=Sun..6=Sat
+    const diff = (jsDay + 6) % 7; // Mon=0..Sun=6
+    next.setDate(next.getDate() - diff);
+    next.setHours(0, 0, 0, 0);
+    return next;
+};
+
+type CalendarCell = { date: Date; inMonth: boolean };
+const getMonthGrid = (month: Date): CalendarCell[] => {
+    const start = startOfWeekMonday(startOfMonth(month));
+    const cells: CalendarCell[] = [];
+    for (let i = 0; i < 42; i++) {
+        const date = addDays(start, i);
+        cells.push({
+            date,
+            inMonth: date.getMonth() === month.getMonth(),
+        });
+    }
+    return cells;
+};
+
+const formatMonthTitle = (d: Date) =>
+    d.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+
+const dayLabels = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+
+const blockedDateSet = computed(() => {
+    const set = new Set<string>();
+    for (const r of props.blocked ?? []) {
+        const start = parseLocalDate(r.check_in_date);
+        const end = parseLocalDate(r.check_out_date);
+        if (!start || !end) continue;
+
+        const maxDays = 370;
+        let cursor = new Date(start);
+        cursor.setHours(0, 0, 0, 0);
+        const endInclusive = new Date(end);
+        endInclusive.setHours(0, 0, 0, 0);
+
+        let guard = 0;
+        while (cursor <= endInclusive && guard < maxDays) {
+            set.add(toIsoDate(cursor));
+            cursor = addDays(cursor, 1);
+            guard++;
+        }
+    }
+    return set;
+});
+
+const isDateBlocked = (d: Date) => blockedDateSet.value.has(toIsoDate(d));
+
+const selectedCheckIn = computed(() => parseLocalDate(form.check_in_date));
+const selectedCheckOut = computed(() => parseLocalDate(form.check_out_date));
+
+const selectedRange = computed(() => {
+    const start = selectedCheckIn.value;
+    const end = selectedCheckOut.value;
+    if (!start || !end) return null;
+    if (end <= start) return null;
+    return { start, endExclusive: end };
+});
+
+const nights = computed(() => {
+    const range = selectedRange.value;
+    if (!range) return 0;
+    const diffMs = range.endExclusive.getTime() - range.start.getTime();
+    return Math.max(0, Math.round(diffMs / 86_400_000));
+});
+
+const selectedRangeHasBlocked = computed(() => {
+    const range = selectedRange.value;
+    if (!range) return false;
+
+    const maxDays = 370;
+    let cursor = new Date(range.start);
+    cursor.setHours(0, 0, 0, 0);
+    let guard = 0;
+
+    while (cursor < range.endExclusive && guard < maxDays) {
+        if (isDateBlocked(cursor)) return true;
+        cursor = addDays(cursor, 1);
+        guard++;
+    }
+
+    return false;
+});
+
+const canSubmitBooking = computed(() => {
+    if (!canBook.value) return false;
+    if (!selectedRange.value) return false;
+    if (selectedRangeHasBlocked.value) return false;
+    return !form.processing;
+});
+
+const isRangeStart = (d: Date) => {
+    const start = selectedCheckIn.value;
+    if (!start) return false;
+    return isSameDay(d, start);
+};
+
+const isRangeEnd = (d: Date) => {
+    const end = selectedCheckOut.value;
+    if (!end) return false;
+    return isSameDay(d, end);
+};
+
+const isInBetweenRange = (d: Date) => {
+    const range = selectedRange.value;
+    if (!range) return false;
+    if (isDateBlocked(d)) return false;
+    return d > range.start && d < range.endExclusive;
+};
+
+const dayButtonClass = (d: Date, inMonth: boolean) => {
+    if (!inMonth) return 'cal-day--outside';
+    if (isDateBlocked(d)) return 'cal-day--blocked';
+    if (isRangeStart(d) || isRangeEnd(d)) return 'cal-day--edge';
+    if (isInBetweenRange(d)) return 'cal-day--inrange';
+    return '';
+};
+
+const calendarMonthOffset = ref(0);
+const calendarMonths = computed(() => {
+    const base = startOfMonth(new Date());
+    const first = addMonths(base, calendarMonthOffset.value);
+    return [first, addMonths(first, 1)];
+});
+
+const calendarHint = computed(() => {
+    if (!isLoggedIn.value) {
+        if (!form.check_in_date) return 'Pilih tanggal untuk cek ketersediaan (lalu masuk untuk booking)';
+        if (!form.check_out_date) return 'Pilih tanggal check-out (lalu masuk untuk booking)';
+        if (!selectedRange.value) return 'Check-out harus setelah check-in';
+        if (selectedRangeHasBlocked.value) return 'Rentang tanggal melewati tanggal yang sudah terisi';
+        return nights.value > 0 ? `${nights.value} malam (masuk untuk booking)` : 'Masuk untuk booking';
+    }
+
+    if (!canBook.value) {
+        const roleLabel = userRole.value ? String(userRole.value) : 'unknown';
+        return `Akun kamu (${roleLabel}) tidak bisa booking. Gunakan akun tenant.`;
+    }
+    if (!form.check_in_date) return 'Pilih tanggal check-in';
+    if (!form.check_out_date) return 'Pilih tanggal check-out';
+    if (!selectedRange.value) return 'Check-out harus setelah check-in';
+    if (selectedRangeHasBlocked.value) return 'Rentang tanggal melewati tanggal yang sudah terisi';
+    return nights.value > 0 ? `${nights.value} malam` : 'Siap dibuat';
+});
+
+const pickFromCalendar = (d: Date) => {
+    if (!Number.isFinite(d.getTime())) return;
+    if (isDateBlocked(d)) return;
+
+    const iso = toIsoDate(d);
+
+    if (!form.check_in_date || (form.check_in_date && form.check_out_date)) {
+        form.check_in_date = iso;
+        form.check_out_date = '';
+        return;
+    }
+
+    const checkIn = selectedCheckIn.value;
+    if (!checkIn) {
+        form.check_in_date = iso;
+        return;
+    }
+
+    if (d <= checkIn) {
+        form.check_in_date = iso;
+        form.check_out_date = '';
+        return;
+    }
+
+    form.check_out_date = iso;
+};
+
+const decrementGuests = () => {
+    form.guests_count = Math.max(1, Number(form.guests_count ?? 1) - 1);
+};
+
+const incrementGuests = () => {
+    form.guests_count = Math.min(30, Number(form.guests_count ?? 1) + 1);
+};
+
 const quickNavRef = ref<HTMLDivElement | null>(null);
 
 const scrollToSection = (id: string) => {
@@ -153,6 +376,10 @@ const scrollToSection = (id: string) => {
 };
 
 const submit = () => {
+    if (!canSubmitBooking.value) {
+        return;
+    }
+
     form.post('/bookings', {
         preserveScroll: true,
     });
@@ -568,61 +795,178 @@ onBeforeUnmount(() => {
             </section>
 
             <section
-                v-if="blocked.length"
-                class="mt-7 border-t border-[color:var(--clay-hairline)] pt-6"
+                id="booking"
+                class="mt-7 scroll-mt-24 border-t border-[color:var(--clay-hairline)] pt-6"
             >
-                <div class="text-sm font-semibold">Tanggal terisi</div>
-                <div class="mt-3 divide-y divide-[color:var(--clay-hairline)] rounded-2xl bg-[color:var(--clay-surface-soft)]">
-                    <div
-                        v-for="(b, idx) in blocked"
-                        :key="idx"
-                        class="flex items-start justify-between gap-3 px-4 py-3 text-sm"
-                    >
-                        <div class="text-[color:var(--clay-body)]">
-                            {{ b.check_in_date }} → {{ b.check_out_date }}
-                        </div>
-                        <div class="text-xs text-[color:var(--clay-muted)]">
-                            {{ b.status }}
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <section id="booking" class="mt-7 scroll-mt-24 border-t border-[color:var(--clay-hairline)] pt-6">
                 <div class="text-sm font-semibold">Booking</div>
-                <div v-if="!canBook" class="mt-3 text-sm text-[color:var(--clay-muted)]">
-                    Login sebagai tenant untuk membuat booking.
+                <div class="mt-3 rounded-2xl border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)] p-4 shadow-xs">
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="min-w-0">
+                            <div class="text-xs font-medium text-[color:var(--clay-muted)]">
+                                Ketersediaan
+                            </div>
+                            <div class="mt-1 text-sm text-[color:var(--clay-body)]">
+                                {{ calendarHint }}
+                            </div>
+                        </div>
+                        <div class="flex shrink-0 items-center gap-1">
+                            <Button
+                                type="button"
+                                size="icon"
+                                variant="ghost"
+                                class="h-9 w-9 rounded-full border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)]"
+                                @click="calendarMonthOffset -= 1"
+                            >
+                                <ChevronLeft class="h-4 w-4" />
+                            </Button>
+                            <Button
+                                type="button"
+                                size="icon"
+                                variant="ghost"
+                                class="h-9 w-9 rounded-full border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)]"
+                                @click="calendarMonthOffset += 1"
+                            >
+                                <ChevronRight class="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 grid gap-6 sm:grid-cols-2">
+                        <div
+                            v-for="month in calendarMonths"
+                            :key="toIsoDate(month)"
+                            class="min-w-0"
+                        >
+                            <div class="text-sm font-semibold capitalize text-center">
+                                {{ formatMonthTitle(month) }}
+                            </div>
+                            <div class="mt-3 grid grid-cols-7 gap-1">
+                                <div
+                                    v-for="label in dayLabels"
+                                    :key="label"
+                                    class="text-center text-[10px] font-semibold tracking-wide text-[color:var(--clay-muted)]"
+                                >
+                                    {{ label }}
+                                </div>
+                            </div>
+                            <div class="cal-grid mt-2 grid grid-cols-7 gap-px p-px">
+                                <button
+                                    v-for="cell in getMonthGrid(month)"
+                                    :key="toIsoDate(cell.date)"
+                                    type="button"
+                                    class="cal-day relative flex h-5 w-full items-center justify-center text-[13px] tabular-nums transition"
+                                    :disabled="!cell.inMonth || isDateBlocked(cell.date)"
+                                    :class="dayButtonClass(cell.date, cell.inMonth)"
+                                    @click="pickFromCalendar(cell.date)"
+                                >
+                                    {{ cell.date.getDate() }}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
 
-                <form v-else class="mt-4 space-y-4" @submit.prevent="submit">
-                    <div>
-                        <Label for="check_in_date">Check-in</Label>
-                        <Input id="check_in_date" v-model="form.check_in_date" class="clay-control rounded-xl" type="date" />
-                        <InputError :message="form.errors.check_in_date" />
-                    </div>
+                <form v-if="canBook" class="mt-4" @submit.prevent="submit">
+                    <div class="rounded-2xl bg-[color:var(--clay-surface-soft)] p-4">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <Label for="check_in_date">Check-in</Label>
+                                <Input
+                                    id="check_in_date"
+                                    v-model="form.check_in_date"
+                                    class="clay-control rounded-xl"
+                                    type="date"
+                                />
+                                <InputError :message="form.errors.check_in_date" />
+                            </div>
 
-                    <div>
-                        <Label for="check_out_date">Check-out</Label>
-                        <Input id="check_out_date" v-model="form.check_out_date" class="clay-control rounded-xl" type="date" />
-                        <InputError :message="form.errors.check_out_date" />
-                    </div>
-
-                    <div>
-                        <Label for="guests_count">Tamu</Label>
-                        <div class="relative">
-                            <Users class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--clay-muted)]" />
-                            <Input
-                                id="guests_count"
-                                v-model="form.guests_count"
-                                class="clay-control rounded-xl pl-9"
-                                type="number"
-                                min="1"
-                                max="30"
-                            />
+                            <div>
+                                <Label for="check_out_date">Check-out</Label>
+                                <Input
+                                    id="check_out_date"
+                                    v-model="form.check_out_date"
+                                    class="clay-control rounded-xl"
+                                    type="date"
+                                />
+                                <InputError :message="form.errors.check_out_date" />
+                            </div>
                         </div>
-                        <InputError :message="form.errors.guests_count" />
+
+                        <div class="mt-4">
+                            <Label for="guests_count">Tamu</Label>
+                            <div class="mt-1 flex items-stretch gap-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    class="h-10 w-10 rounded-xl"
+                                    @click="decrementGuests"
+                                >
+                                    <Minus class="h-4 w-4" />
+                                </Button>
+                                <div class="relative min-w-0 flex-1">
+                                    <Users class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--clay-muted)]" />
+                                    <Input
+                                        id="guests_count"
+                                        v-model="form.guests_count"
+                                        class="clay-control rounded-xl pl-9 text-center"
+                                        type="number"
+                                        min="1"
+                                        max="30"
+                                    />
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    class="h-10 w-10 rounded-xl"
+                                    @click="incrementGuests"
+                                >
+                                    <Plus class="h-4 w-4" />
+                                </Button>
+                            </div>
+                            <InputError :message="form.errors.guests_count" />
+                        </div>
+
+                        <div
+                            v-if="form.check_in_date && form.check_out_date && !selectedRange"
+                            class="mt-3 text-xs text-[color:var(--clay-muted)]"
+                        >
+                            Check-out harus setelah check-in.
+                        </div>
+                        <div
+                            v-else-if="selectedRangeHasBlocked"
+                            class="mt-3 text-xs text-[color:var(--clay-muted)]"
+                        >
+                            Rentang tanggal melewati tanggal yang sudah terisi.
+                        </div>
+
+                        <div class="mt-4 flex items-center justify-between gap-3">
+                            <div class="text-xs text-[color:var(--clay-muted)]">
+                                <span v-if="nights > 0">{{ nights }} malam</span>
+                                <span v-else>Pilih tanggal dulu</span>
+                            </div>
+                            <Button
+                                class="shrink-0 rounded-xl"
+                                type="submit"
+                                :disabled="!canSubmitBooking"
+                            >
+                                Buat booking
+                            </Button>
+                        </div>
                     </div>
                 </form>
+                <div
+                    v-else-if="isLoggedIn"
+                    class="mt-4 rounded-2xl bg-[color:var(--clay-surface-soft)] p-4 text-sm text-[color:var(--clay-muted)]"
+                >
+                    Akun kamu tidak punya akses untuk booking. Gunakan akun dengan role tenant.
+                </div>
+                <div
+                    v-else
+                    class="mt-4 rounded-2xl bg-[color:var(--clay-surface-soft)] p-4 text-sm text-[color:var(--clay-muted)]"
+                >
+                    Masuk sebagai tenant untuk membuat booking.
+                </div>
             </section>
         </div>
 
@@ -641,16 +985,70 @@ onBeforeUnmount(() => {
                         v-if="canBook"
                         class="shrink-0"
                         type="button"
-                        :disabled="form.processing"
+                        :disabled="!canSubmitBooking"
                         @click="submit"
                     >
-                        Create booking
+                        Buat booking
                     </Button>
-                    <Button v-else variant="outline" class="shrink-0" as-child>
+                    <Button v-else-if="!isLoggedIn" variant="outline" class="shrink-0" as-child>
                         <Link href="/login">Masuk</Link>
+                    </Button>
+                    <Button v-else variant="outline" class="shrink-0" disabled>
+                        Tidak bisa booking
                     </Button>
                 </div>
             </div>
         </div>
     </div>
 </template>
+
+<style scoped>
+.cal-grid {
+    border-radius: 1rem;
+}
+
+.cal-day {
+    border-radius: 0.875rem;
+    background: var(--clay-canvas);
+    color: var(--clay-ink);
+}
+
+.cal-day:not(:disabled):hover {
+    background: var(--clay-surface-soft);
+    color: var(--primary);
+}
+
+.cal-day:disabled {
+    cursor: not-allowed;
+}
+
+.cal-day--outside {
+    color: var(--clay-muted);
+    opacity: 0.35;
+}
+
+.cal-day--blocked {
+    background: var(--clay-surface-soft);
+    color: var(--clay-muted);
+    text-decoration: line-through;
+}
+
+.cal-day--inrange {
+    background: color-mix(in srgb, var(--primary) 70%, var(--clay-canvas));
+    color: color-mix(in srgb, var(--primary) 10%, var(--clay-canvas));
+}
+
+.cal-day--edge {
+    background: var(--primary);
+    color: var(--primary-foreground);
+    font-weight: 600;
+    position: relative;
+    z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cal-day {
+        transition: none;
+    }
+}
+</style>
