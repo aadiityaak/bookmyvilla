@@ -28,6 +28,10 @@ type BottomNavItem = {
 const page = usePage();
 const user = computed(() => (page.props as any)?.auth?.user ?? null);
 const role = computed(() => user.value?.role ?? null);
+const transitionKey = computed(() => {
+    if (typeof window === 'undefined') return page.url;
+    return new URL(page.url, window.location.origin).pathname;
+});
 
 const showBottomNav = computed(() => true);
 
@@ -75,7 +79,11 @@ const isActive = (item: BottomNavItem) => {
                     : ''
             "
         >
-            <slot />
+            <Transition name="fade" mode="out-in">
+                <div :key="transitionKey">
+                    <slot />
+                </div>
+            </Transition>
         </AppContent>
         <nav
             v-if="showBottomNav"
@@ -114,3 +122,30 @@ const isActive = (item: BottomNavItem) => {
         <Toaster />
     </AppShell>
 </template>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+    transition:
+        opacity 180ms ease,
+        transform 180ms ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
+    transform: translateY(4px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .fade-enter-active,
+    .fade-leave-active {
+        transition: none;
+    }
+
+    .fade-enter-from,
+    .fade-leave-to {
+        transform: none;
+    }
+}
+</style>
