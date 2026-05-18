@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Booking;
 use App\Models\Property;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -15,6 +17,7 @@ class ExploreController extends Controller
         $filters = [
             'q' => $request->string('q')->toString(),
             'sort' => $request->string('sort')->toString() ?: 'latest',
+            'regency_id' => $request->string('regency_id')->toString(),
             'user_lat' => $request->string('user_lat')->toString(),
             'user_lng' => $request->string('user_lng')->toString(),
         ];
@@ -28,7 +31,11 @@ class ExploreController extends Controller
                         ->where('name', 'like', '%' . $term . '%')
                         ->orWhere('address', 'like', '%' . $term . '%');
                 });
-            });
+            })
+            ->when(
+                $filters['regency_id'],
+                fn($q, string $regencyId) => $q->where('regency_id', $regencyId),
+            );
 
         switch ($filters['sort']) {
             case 'name_asc':
@@ -64,6 +71,7 @@ class ExploreController extends Controller
             ->appends(array_filter([
                 'q' => $filters['q'] ?: null,
                 'sort' => $filters['sort'] !== 'latest' ? $filters['sort'] : null,
+                'regency_id' => $filters['regency_id'] !== '' ? $filters['regency_id'] : null,
                 'user_lat' => $filters['sort'] === 'nearest' && $filters['user_lat'] !== '' ? $filters['user_lat'] : null,
                 'user_lng' => $filters['sort'] === 'nearest' && $filters['user_lng'] !== '' ? $filters['user_lng'] : null,
             ], fn($value) => $value !== null && $value !== ''))
@@ -80,6 +88,9 @@ class ExploreController extends Controller
         return Inertia::render('guest/explore/Index', [
             'filters' => $filters,
             'properties' => $properties,
+            'regencies' => Schema::hasTable('reg_regencies')
+                ? DB::table('reg_regencies')->select(['id', 'name'])->orderBy('name')->get()
+                : [],
         ]);
     }
 

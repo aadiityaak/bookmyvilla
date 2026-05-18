@@ -239,7 +239,7 @@ type QuickLink = {
 const quickLinks = computed<QuickLink[]>(() => [
     { title: 'Explore', subtitle: 'Cari villa', href: '/explore', icon: Search },
     { title: 'Area', subtitle: 'Lokasi populer', href: '/explore', icon: MapPinned },
-    { title: 'Booking', subtitle: 'Cek pesanan', href: user.value ? '/bookings' : '/login', icon: CalendarDays },
+    { title: 'Booking', subtitle: 'Cek pesanan', href: user.value ? '/my-property' : '/login', icon: CalendarDays },
     { title: 'Host', subtitle: 'Kelola listing', href: user.value ? '/properties' : '/login', icon: Building2 },
 ]);
 </script>

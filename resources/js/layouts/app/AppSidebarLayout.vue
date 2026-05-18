@@ -67,7 +67,7 @@ const isActive = (item: BottomNavItem) => {
             </AppContent>
             <nav
                 v-if="showBottomNav"
-                class="fixed inset-x-0 bottom-0 z-50 border-t border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)]"
+                class="fixed inset-x-0 bottom-0 z-[2001] border-t border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)]"
             >
                 <div class="mx-auto w-full max-w-md px-4 pb-[env(safe-area-inset-bottom)]">
                     <div class="grid grid-cols-4">
