@@ -118,6 +118,10 @@
         @apply text-sm text-[color:var(--clay-body)];
         min-height: 10rem;
     }
+
+    .thumb-nav .splide__track--nav > .splide__list > .splide__slide.is-active {
+        border: 0 !important;
+    }
 }
 
 @layer base {

@@ -440,7 +440,7 @@ onBeforeUnmount(() => {
             <div class="-mx-4 mt-5">
                 <div
                     ref="quickNavRef"
-                    class="sticky top-0 z-[1900] border-b border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)] px-4 py-2"
+                    class="sticky top-0 z-[1900] bg-[color:var(--clay-canvas)] px-4 py-2"
                 >
                     <div class="flex items-center gap-2 overflow-x-auto pb-1">
                         <a
@@ -504,7 +504,7 @@ onBeforeUnmount(() => {
                     <Splide
                         v-if="galleryImages.length > 1"
                         ref="thumbsGalleryRef"
-                        class="mt-3 [&_.splide__slide:not(.is-active)_img]:opacity-60"
+                        class="thumb-nav mt-3 [&_.splide__slide:not(.is-active)_img]:opacity-60"
                         :options="{
                             type: 'slide',
                             rewind: false,
