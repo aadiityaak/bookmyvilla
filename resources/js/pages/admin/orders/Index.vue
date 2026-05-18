@@ -18,6 +18,7 @@ type OrderRow = {
     total_amount: string | null;
     currency: string;
     created_at: string | null;
+    payment_proof_uploaded_at: string | null;
 };
 
 type PaginationLink = {
@@ -191,6 +192,12 @@ const statusPillClass = (status: string) => {
                     <Badge :class="statusPillClass(o.status)">
                         {{ o.status }}
                     </Badge>
+                    <div
+                        v-if="o.payment_proof_uploaded_at"
+                        class="mt-2 inline-flex items-center rounded-md border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)] px-2 py-1 text-xs text-[color:var(--clay-ink)]"
+                    >
+                        Bukti masuk
+                    </div>
                 </div>
 
                 <div class="col-span-2 flex justify-end">

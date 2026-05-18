@@ -17,6 +17,8 @@ type Order = {
     total_amount: string | null;
     currency: string;
     price_snapshot: any;
+    payment_proof_url: string | null;
+    payment_proof_uploaded_at: string | null;
     created_at: string | null;
     updated_at: string | null;
     property: { id: number; name: string; featured_image: string | null; address: string | null } | null;
@@ -147,6 +149,29 @@ const propertyHref = computed(() => (props.order.property ? `/admin/properties/$
                         <div class="truncate text-xs text-[color:var(--clay-muted)]">
                             {{ props.order.guest?.email ?? '' }}
                         </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-card)] p-4">
+                    <div class="text-sm font-semibold">Bukti pembayaran</div>
+                    <div v-if="props.order.payment_proof_url" class="mt-3">
+                        <div class="text-xs text-[color:var(--clay-muted)]">
+                            Upload: {{ props.order.payment_proof_uploaded_at ?? '-' }}
+                        </div>
+                        <a
+                            :href="props.order.payment_proof_url"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="mt-2 block overflow-hidden rounded-lg border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)]"
+                        >
+                            <img :src="props.order.payment_proof_url" alt="Bukti pembayaran" class="w-full object-contain p-3" />
+                        </a>
+                    </div>
+                    <div
+                        v-else
+                        class="mt-3 rounded-lg border border-dashed border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)] p-3 text-sm text-[color:var(--clay-muted)]"
+                    >
+                        Belum ada bukti pembayaran.
                     </div>
                 </div>
             </div>

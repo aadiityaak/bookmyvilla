@@ -39,6 +39,7 @@ class OrderController extends Controller
             ->paginate(15)
             ->withQueryString()
             ->through(fn (Booking $booking) => [
+                'payment_proof_uploaded_at' => optional($booking->payment_proof_uploaded_at)?->toISOString(),
                 'id' => $booking->id,
                 'property' => $booking->property ? [
                     'id' => $booking->property->id,
@@ -73,6 +74,9 @@ class OrderController extends Controller
             'guest:id,name,email',
         ]);
 
+        $proofPath = is_string($booking->payment_proof_path ?? null) ? $booking->payment_proof_path : null;
+        $proofUrl = $proofPath && $proofPath !== '' ? '/storage/' . ltrim($proofPath, '/') : null;
+
         return Inertia::render('admin/orders/Edit', [
             'order' => [
                 'id' => $booking->id,
@@ -83,6 +87,8 @@ class OrderController extends Controller
                 'total_amount' => $booking->total_amount,
                 'currency' => $booking->currency,
                 'price_snapshot' => $booking->price_snapshot,
+                'payment_proof_url' => $proofUrl,
+                'payment_proof_uploaded_at' => optional($booking->payment_proof_uploaded_at)?->toISOString(),
                 'created_at' => optional($booking->created_at)?->toISOString(),
                 'updated_at' => optional($booking->updated_at)?->toISOString(),
                 'property' => $booking->property ? [
