@@ -24,11 +24,20 @@ const props = withDefaults(
             featured_image: string | null;
             address: string | null;
         }[];
+        articles: {
+            id: number;
+            title: string;
+            slug: string;
+            featured_image: string | null;
+            excerpt: string | null;
+            published_at: string | null;
+        }[];
     }>(),
     {
         canRegister: true,
         villas: () => [],
         kosts: () => [],
+        articles: () => [],
     },
 );
 
@@ -92,6 +101,13 @@ const toImageUrl = (path: string | null) => {
     }
 
     return `/storage/${path}`;
+};
+
+const formatDate = (iso: string | null) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (!Number.isFinite(d.getTime())) return '';
+    return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
 };
 
 const villaCarouselItems = computed<CarouselItem[]>(() => {
@@ -192,7 +208,7 @@ const markDragged = () => {
 const wasJustDragged = () => Date.now() - lastDragAt.value < 250;
 
 const goCarousel = (refEl: any, direction: 'prev' | 'next') => {
-    const api = refEl?.value?.splide ?? refEl?.value;
+    const api = refEl?.splide ?? refEl?.value?.splide ?? refEl?.value ?? refEl;
     const control = direction === 'next' ? '>' : '<';
     api?.go?.(control);
 };
@@ -232,7 +248,7 @@ const quickLinks = computed<QuickLink[]>(() => [
     <Head title="BookMyVilla" />
 
     <div class="min-h-dvh bg-[color:var(--clay-canvas)] text-[color:var(--clay-ink)]">
-        <section class="mx-auto w-full max-w-md px-4 pb-10 pt-6">
+        <section class="mx-auto w-full max-w-md px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-6">
             <div class="flex items-start justify-between gap-4">
                 <div class="min-w-0">
                     <div class="text-xs font-medium text-[color:var(--clay-muted)]">Hello</div>
@@ -489,41 +505,53 @@ const quickLinks = computed<QuickLink[]>(() => [
                 </Splide>
             </div>
 
-            <div class="mt-8 rounded-2xl border border-[color:var(--clay-hairline)] bg-[color:var(--clay-canvas)] p-4">
-                <div class="text-sm font-semibold">Mulai dari mana?</div>
-                <div class="mt-3 grid grid-cols-1 gap-3">
-                    <div class="rounded-xl border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-card)] p-4">
-                        <div class="text-sm font-medium">Mau sewa villa</div>
-                        <div class="mt-1 text-sm text-[color:var(--clay-body)]">
-                            Browse dulu, lalu login untuk booking.
-                        </div>
-                        <div class="mt-4 flex gap-2">
-                            <Button size="sm" as-child>
-                                <Link href="/explore">Explore</Link>
-                            </Button>
-                            <Button v-if="!$page.props.auth.user" size="sm" variant="outline" as-child>
-                                <Link :href="login()">Masuk</Link>
-                            </Button>
-                        </div>
+            <div class="mt-8">
+                <div class="text-xs font-medium tracking-wide text-[color:var(--clay-muted)]">
+                    Your Reading List
+                </div>
+                <div class="mt-1 text-base font-semibold">
+                    Artikel terbaru
+                </div>
+
+                <div class="mt-3">
+                    <div v-if="props.articles.length" class="divide-y divide-[color:var(--clay-hairline)]">
+                        <Link
+                            v-for="article in props.articles.slice(0, 5)"
+                            :key="article.id"
+                            :href="`/articles/${article.slug}`"
+                            class="group flex items-start gap-3 py-3"
+                        >
+                            <div class="h-14 w-14 shrink-0 overflow-hidden rounded-md bg-[color:var(--clay-surface-soft)]">
+                                <img
+                                    v-if="toImageUrl(article.featured_image)"
+                                    :src="toImageUrl(article.featured_image) ?? ''"
+                                    alt=""
+                                    class="h-full w-full object-cover"
+                                    loading="lazy"
+                                />
+                            </div>
+
+                            <div class="min-w-0 flex-1">
+                                <div class="line-clamp-2 text-sm font-semibold text-[color:var(--clay-ink)]">
+                                    {{ article.title }}
+                                </div>
+                                <div class="mt-1 flex items-center gap-2 text-[11px] text-[color:var(--clay-muted)]">
+                                    <span class="inline-flex h-4 items-center rounded bg-[color:var(--clay-surface-soft)] px-1.5">
+                                        Artikel
+                                    </span>
+                                    <span>{{ formatDate(article.published_at) }}</span>
+                                </div>
+                                <div v-if="article.excerpt" class="mt-1 line-clamp-2 text-xs text-[color:var(--clay-body)]">
+                                    {{ article.excerpt }}
+                                </div>
+                            </div>
+
+                            <ChevronRight class="mt-1 h-4 w-4 shrink-0 text-[color:var(--clay-muted)] opacity-70 group-hover:opacity-100" />
+                        </Link>
                     </div>
-                    <div class="rounded-xl border border-[color:var(--clay-hairline)] bg-[color:var(--clay-surface-card)] p-4">
-                        <div class="text-sm font-medium">Mau jadi host</div>
-                        <div class="mt-1 text-sm text-[color:var(--clay-body)]">
-                            Login sebagai host/admin untuk mengelola property.
-                        </div>
-                        <div class="mt-4 flex gap-2">
-                            <Button size="sm" as-child>
-                                <Link href="/properties">Kelola Property</Link>
-                            </Button>
-                            <Button
-                                v-if="!$page.props.auth.user && canRegister"
-                                size="sm"
-                                variant="outline"
-                                as-child
-                            >
-                                <Link :href="register()">Daftar</Link>
-                            </Button>
-                        </div>
+
+                    <div v-else class="py-3 text-sm text-[color:var(--clay-muted)]">
+                        Belum ada artikel.
                     </div>
                 </div>
             </div>

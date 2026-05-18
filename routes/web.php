@@ -11,6 +11,7 @@ use App\Models\Property;
 use App\Http\Controllers\Admin\PropertyController as AdminPropertyController;
 use App\Http\Controllers\Admin\ArticleController as AdminArticleController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\ExploreController;
 use App\Http\Controllers\PropertyController;
@@ -70,6 +71,8 @@ Route::get('/', function (Request $request) {
         'articles' => $articles,
     ]);
 })->name('home');
+
+Route::get('articles/{article:slug}', [ArticleController::class, 'show'])->name('articles.show');
 
 Route::get('explore', [ExploreController::class, 'index'])->name('explore.index');
 Route::get('explore/{property}', [ExploreController::class, 'show'])->name('explore.show');
