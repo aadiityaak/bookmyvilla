@@ -9,13 +9,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 type BankAccount = {
-    bank_name: string | null;
-    account_name: string | null;
-    account_number: string | null;
+    bank_name: string;
+    account_name: string;
+    account_number: string;
 };
 
 type PaymentSettings = {
-    banks: BankAccount[];
+    banks: { bank_name: string | null; account_name: string | null; account_number: string | null }[];
     qris_image_path: string | null;
 };
 

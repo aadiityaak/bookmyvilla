@@ -75,7 +75,7 @@ const formatDateTime = (iso?: string | null) => {
 
 const onBellOpenChange = (open: boolean) => {
     if (!open) return;
-    router.reload({ only: ['notifications'], preserveScroll: true, preserveState: true });
+    router.reload({ only: ['notifications'] });
 };
 
 const isPublicHeader = computed(

@@ -123,6 +123,11 @@ const description = computed(() =>
                                     <Link :href="`/bookings/${b.id}/payment`">Bayar sekarang</Link>
                                 </Button>
                             </div>
+                            <div v-else-if="b.status === 'confirmed'" class="pt-2">
+                                <Button size="sm" class="w-full" as-child>
+                                    <Link :href="`/bookings/${b.id}/ticket`">Lihat barcode</Link>
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 </div>

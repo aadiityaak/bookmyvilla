@@ -191,4 +191,48 @@ class BookingController extends Controller
 
         return to_route('bookings.payment', $booking);
     }
+
+    public function ticket(Request $request, Booking $booking): Response|RedirectResponse
+    {
+        abort_unless($booking->guest_user_id === $request->user()->id, 403);
+
+        if ($booking->status !== 'confirmed') {
+            if ($booking->status === 'pending_payment') {
+                return redirect('/bookings/' . $booking->id . '/payment');
+            }
+
+            return redirect('/bookings');
+        }
+
+        $booking->loadMissing(['property:id,name,featured_image,address', 'guest:id,name,email']);
+
+        $payload = [
+            'booking_id' => $booking->id,
+            'property_id' => $booking->property_id,
+            'guest_user_id' => $booking->guest_user_id,
+            'check_in_date' => optional($booking->check_in_date)->toDateString(),
+            'check_out_date' => optional($booking->check_out_date)->toDateString(),
+            'guests_count' => $booking->guests_count,
+            'issued_at' => now()->toISOString(),
+        ];
+
+        return Inertia::render('guest/bookings/Ticket', [
+            'booking' => [
+                'id' => $booking->id,
+                'status' => $booking->status,
+                'check_in_date' => optional($booking->check_in_date)->toDateString(),
+                'check_out_date' => optional($booking->check_out_date)->toDateString(),
+                'guests_count' => $booking->guests_count,
+                'guest_name' => $booking->guest?->name,
+                'created_at' => optional($booking->created_at)?->toISOString(),
+                'property' => $booking->property ? [
+                    'id' => $booking->property->id,
+                    'name' => $booking->property->name,
+                    'featured_image' => $booking->property->featured_image,
+                    'address' => $booking->property->address,
+                ] : null,
+            ],
+            'ticket_payload' => json_encode($payload),
+        ]);
+    }
 }
